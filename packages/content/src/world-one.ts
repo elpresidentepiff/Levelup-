@@ -408,3 +408,112 @@ export const worldOneSkillOutcomes: Record<SkillId, WorldSkillOutcome> = {
 
 export const getMissionById = (id: string) =>
   worldOneMissions.find((mission) => mission.id === id);
+
+/**
+ * Castle Boss variants.
+ *
+ * One fixed, visible board is weak transfer evidence: a child who has seen it
+ * once is recalling a route, not applying a skill. Three boards with different
+ * route logic mean passing the boss says something about the skill rather than
+ * about the board.
+ *
+ * The optimal lengths below are not authored by hand. Every variant is proved
+ * solvable within its own command budget by a breadth-first search over
+ * (position, gems-collected) in the test suite, and `optimalProgramLength` is
+ * asserted to equal the true optimum. Two earlier hand-designed candidates were
+ * impossible and a third needed twelve moves against a ten-move budget - which
+ * is exactly what would have shipped without that check.
+ *
+ * The shipped board is kept first so existing progress stays valid.
+ */
+export const castleBossVariants: MissionDefinition[] = [
+  {
+    ...worldOneMissions[worldOneMissions.length - 1],
+    id: 'castle-boss',
+    // Straight run then a straight climb: two turns.
+    optimalProgramLength: 8,
+    maxCommands: 10,
+    evidence: [
+      { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-ascent' },
+      { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-ascent' },
+    ],
+  },
+  {
+    ...worldOneMissions[worldOneMissions.length - 1],
+    id: 'castle-boss-vault',
+    title: 'Castle Boss — The Vault',
+    objective:
+      'Byte starts at the far tower. Collect all three keys and reach the vault door in the corner.',
+    shortObjective: 'Collect 3 keys. Reach the vault.',
+    board: {
+      columns: 5,
+      rows: 5,
+      start: { x: 4, y: 4 },
+      goal: { x: 0, y: 0 },
+      walls: [
+        { x: 3, y: 2 },
+        { x: 2, y: 2 },
+        { x: 2, y: 1 },
+        { x: 1, y: 1 },
+      ],
+      gems: [
+        { x: 3, y: 4 },
+        { x: 0, y: 2 },
+        { x: 0, y: 1 },
+      ],
+    },
+    // A staircase: the wall spine forces alternating moves, five turns.
+    optimalProgramLength: 8,
+    maxCommands: 10,
+    evidence: [
+      { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-vault' },
+      { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-vault' },
+    ],
+  },
+  {
+    ...worldOneMissions[worldOneMissions.length - 1],
+    id: 'castle-boss-ramparts',
+    title: 'Castle Boss — The Ramparts',
+    objective:
+      'The keys are spread along the ramparts. Collect all three, then reach the high gate.',
+    shortObjective: 'Collect 3 keys. Reach the high gate.',
+    board: {
+      columns: 5,
+      rows: 5,
+      start: { x: 0, y: 3 },
+      goal: { x: 4, y: 0 },
+      walls: [
+        { x: 1, y: 2 },
+        { x: 4, y: 4 },
+      ],
+      gems: [
+        { x: 3, y: 3 },
+        { x: 4, y: 2 },
+        { x: 2, y: 2 },
+      ],
+    },
+    // Requires stepping back down after climbing: six turns, no straight run.
+    optimalProgramLength: 9,
+    maxCommands: 11,
+    evidence: [
+      { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-ramparts' },
+      { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-ramparts' },
+    ],
+  },
+];
+
+/**
+ * Pick a boss variant for a learner, deterministically.
+ *
+ * Deterministic rather than random so a child who fails and retries meets the
+ * same castle - retrying a board you have just failed is practice; being handed
+ * a different one is a new problem. It also means a child cannot reroll until
+ * an easier board appears.
+ */
+export const selectCastleBossVariant = (seed: string): MissionDefinition => {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return castleBossVariants[hash % castleBossVariants.length];
+};
