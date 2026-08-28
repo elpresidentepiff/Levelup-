@@ -685,3 +685,144 @@ export const masteryBandForOutcome = (
   if (progress >= 50) return 'Getting good';
   return 'Learning';
 };
+
+export type MissionAccessStatus =
+  | 'ready'
+  | 'practice_recommended'
+  | 'locked';
+
+export type MissionAccessReason =
+  | 'first_mission'
+  | 'already_completed'
+  | 'previous_mission_incomplete'
+  | 'previous_mission_completed_independently'
+  | 'previous_mission_completed_with_support';
+
+export type MissionProgressionState = {
+  missionId: string;
+  completed: boolean;
+  stars: number;
+  access: MissionAccessStatus;
+  playable: boolean;
+  reason: MissionAccessReason;
+};
+
+const uniqueMissionsById = (missions: MissionDefinition[]) => {
+  const seen = new Set<string>();
+  return missions.filter((mission) => {
+    if (seen.has(mission.id)) return false;
+    seen.add(mission.id);
+    return true;
+  });
+};
+
+const hasIndependentMissionEvidence = (
+  progress: LearnerProgress,
+  mission: MissionDefinition,
+) =>
+  mission.skills.some(
+    (skillId) =>
+      (progress.mastery[skillId].missionEvidence[mission.id]
+        ?.independentSuccesses ?? 0) > 0,
+  ) || progress.starsByMission[mission.id] === 3;
+
+/**
+ * Content access is deliberately more permissive than capability progression.
+ * Completing the previous mission always lets a child continue. Supported
+ * completion recommends practice, but never turns help into a punishment.
+ */
+export const missionProgressionForWorld = (
+  progress: LearnerProgress,
+  missions: MissionDefinition[],
+): MissionProgressionState[] => {
+  const orderedMissions = uniqueMissionsById(missions);
+  const completedMissionIds = new Set(progress.completedMissionIds);
+
+  return orderedMissions.map((mission, index) => {
+    const completed = completedMissionIds.has(mission.id);
+    const stars = progress.starsByMission[mission.id] ?? 0;
+
+    if (completed) {
+      return {
+        missionId: mission.id,
+        completed,
+        stars,
+        access: 'ready',
+        playable: true,
+        reason: 'already_completed',
+      };
+    }
+
+    if (index === 0) {
+      return {
+        missionId: mission.id,
+        completed,
+        stars,
+        access: 'ready',
+        playable: true,
+        reason: 'first_mission',
+      };
+    }
+
+    const previousMission = orderedMissions[index - 1];
+    if (!completedMissionIds.has(previousMission.id)) {
+      return {
+        missionId: mission.id,
+        completed,
+        stars,
+        access: 'locked',
+        playable: false,
+        reason: 'previous_mission_incomplete',
+      };
+    }
+
+    const independent = hasIndependentMissionEvidence(progress, previousMission);
+    return {
+      missionId: mission.id,
+      completed,
+      stars,
+      access: independent ? 'ready' : 'practice_recommended',
+      playable: true,
+      reason: independent
+        ? 'previous_mission_completed_independently'
+        : 'previous_mission_completed_with_support',
+    };
+  });
+};
+
+export type WorldCapabilityReadiness = {
+  status: 'in_progress' | 'practice_needed' | 'ready';
+  contentComplete: boolean;
+  unmetMasteryTargets: SkillId[];
+};
+
+/**
+ * Capability readiness is a separate, stricter decision. Only outcomes that
+ * World 1 promises to master can gate the next world; introduced-only skills
+ * remain honest introductions rather than impossible blockers.
+ */
+export const worldCapabilityReadiness = (
+  progress: LearnerProgress,
+  missions: MissionDefinition[],
+  outcomes: Record<SkillId, WorldSkillOutcome>,
+): WorldCapabilityReadiness => {
+  const contentComplete = uniqueMissionsById(missions).every((mission) =>
+    progress.completedMissionIds.includes(mission.id),
+  );
+  const unmetMasteryTargets = Object.values(outcomes).flatMap((outcome) =>
+    outcome.target === 'mastery' &&
+    masteryBandForOutcome(progress.mastery[outcome.skillId], outcome) !== 'Mastered'
+      ? [outcome.skillId]
+      : [],
+  );
+
+  return {
+    status: !contentComplete
+      ? 'in_progress'
+      : unmetMasteryTargets.length > 0
+        ? 'practice_needed'
+        : 'ready',
+    contentComplete,
+    unmetMasteryTargets,
+  };
+};
