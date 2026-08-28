@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { worldOneMissions } from '../../../../packages/content/src/world-one';
+import {
+  worldOneMissions,
+  worldOneSkillOutcomes,
+} from '../../../../packages/content/src/world-one';
 import {
   applyMissionEvidence,
   createInitialProgress,
-  masteryBand,
+  masteryBandForOutcome,
 } from '../../../../packages/mastery/src';
 
 /**
@@ -44,7 +47,9 @@ describe('mastery cannot be farmed by repetition', () => {
 
     const sequence = progress.mastery.sequence;
     expect(progress.completedMissionIds).toEqual(['wake-byte']);
-    expect(masteryBand(sequence.score)).not.toBe('Mastered');
+    expect(
+      masteryBandForOutcome(sequence, worldOneSkillOutcomes.sequence),
+    ).not.toBe('Mastered');
   });
 
   it('gives repeat plays of the same mission sharply diminishing value', () => {
@@ -80,7 +85,11 @@ describe('mastery cannot be farmed by repetition', () => {
 
     // One mission solved, however many times, is one piece of evidence.
     const distinctMissions = progress.completedMissionIds.length;
-    const claimsMastery = masteryBand(progress.mastery.sequence.score) === 'Mastered';
+    const claimsMastery =
+      masteryBandForOutcome(
+        progress.mastery.sequence,
+        worldOneSkillOutcomes.sequence,
+      ) === 'Mastered';
 
     expect(claimsMastery && distinctMissions < 2).toBe(false);
   });

@@ -237,13 +237,6 @@ export const hydrateProgress = (value: unknown): LearnerProgress => {
   };
 };
 
-export const masteryBand = (score: number) => {
-  if (score >= 70) return 'Mastered';
-  if (score >= 35) return 'Getting good';
-  if (score > 0) return 'Learning';
-  return 'Not started';
-};
-
 export type MasteryBand =
   | 'Not started'
   | 'Introduced'
