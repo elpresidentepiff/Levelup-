@@ -134,6 +134,9 @@ export const worldOneMissions: MissionDefinition[] = [
     evidence: [
       { skillId: 'debugging', dimension: 'debug', context: 'grid-obstacle-repair' },
       { skillId: 'sequence', dimension: 'apply', context: 'grid-obstacle-repair' },
+      // Repairing a route that stalls is debugging a sequence. The mission
+      // already demands it; it simply was not written down.
+      { skillId: 'sequence', dimension: 'debug', context: 'grid-obstacle-repair' },
     ],
     hints: [
       'Run it once and notice the exact step where Byte stops.',
@@ -437,6 +440,11 @@ export const castleBossVariants: MissionDefinition[] = [
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-ascent' },
       { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-ascent' },
+      // The boss carries no hints, so the child must trace before running and
+      // repair when it stalls. The skills array already claimed both.
+      { skillId: 'sequence', dimension: 'predict', context: 'grid-boss-ascent' },
+      { skillId: 'prediction', dimension: 'predict', context: 'grid-boss-ascent' },
+      { skillId: 'debugging', dimension: 'debug', context: 'grid-boss-ascent' },
     ],
   },
   {
@@ -470,6 +478,11 @@ export const castleBossVariants: MissionDefinition[] = [
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-vault' },
       { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-vault' },
+      // The boss carries no hints, so the child must trace before running and
+      // repair when it stalls. The skills array already claimed both.
+      { skillId: 'sequence', dimension: 'predict', context: 'grid-boss-vault' },
+      { skillId: 'prediction', dimension: 'predict', context: 'grid-boss-vault' },
+      { skillId: 'debugging', dimension: 'debug', context: 'grid-boss-vault' },
     ],
   },
   {
@@ -501,6 +514,11 @@ export const castleBossVariants: MissionDefinition[] = [
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-ramparts' },
       { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-ramparts' },
+      // The boss carries no hints, so the child must trace before running and
+      // repair when it stalls. The skills array already claimed both.
+      { skillId: 'sequence', dimension: 'predict', context: 'grid-boss-ramparts' },
+      { skillId: 'prediction', dimension: 'predict', context: 'grid-boss-ramparts' },
+      { skillId: 'debugging', dimension: 'debug', context: 'grid-boss-ramparts' },
     ],
   },
 ];
