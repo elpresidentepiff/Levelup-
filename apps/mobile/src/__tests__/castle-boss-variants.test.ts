@@ -70,6 +70,13 @@ describe('castle boss variants', () => {
     expect(castleBossVariants.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('keeps one mission id across every board', () => {
+    // Progress and the mastery criteria key on id. A variant that changed it
+    // would cost a child credit for the boss they actually beat.
+    for (const variant of castleBossVariants) expect(variant.id).toBe('castle-boss');
+    expect(new Set(castleBossVariants.map((v) => v.variantId)).size).toBe(castleBossVariants.length);
+  });
+
   it('is solvable within its own command budget, and the declared optimum is true', () => {
     for (const variant of castleBossVariants) {
       const budget = variant.maxCommands ?? 12;
@@ -123,10 +130,10 @@ describe('castle boss variants', () => {
 
   it('selects deterministically and covers every variant across learners', () => {
     const first = selectCastleBossVariant('sofia-2019');
-    expect(selectCastleBossVariant('sofia-2019').id).toBe(first.id);
+    expect(selectCastleBossVariant('sofia-2019').variantId).toBe(first.variantId);
 
     const seen = new Set<string>();
-    for (let i = 0; i < 300; i += 1) seen.add(selectCastleBossVariant(`learner-${i}`).id);
+    for (let i = 0; i < 300; i += 1) seen.add(selectCastleBossVariant(`learner-${i}`).variantId ?? '');
     expect(seen.size).toBe(castleBossVariants.length);
   });
 });

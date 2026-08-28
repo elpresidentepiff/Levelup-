@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -8,7 +8,10 @@ import type {
   LearnerProfile,
   LearnerProgress,
 } from '../../packages/lesson-schema/src';
-import { worldOneMissions } from '../../packages/content/src/world-one';
+import {
+  selectCastleBossVariant,
+  worldOneMissions,
+} from '../../packages/content/src/world-one';
 import {
   applyMissionEvidence,
   createInitialProgress,
@@ -63,8 +66,20 @@ export default function App() {
     };
   }, []);
 
-  const currentMission =
-    worldOneMissions.find((mission) => mission.id === missionId) ?? worldOneMissions[0];
+  // The boss ships as three boards under one mission id. Which castle a learner
+  // meets is fixed by their nickname rather than drawn fresh each time: a child
+  // who fails and retries should meet the same castle, because retrying a board
+  // you have just failed is practice, while being handed a different one is a
+  // new problem. It also means nobody can reroll until an easy board appears.
+  //
+  // The id never changes, so completion, mastery criteria and saved progress
+  // are untouched by which board is served.
+  const currentMission = useMemo(() => {
+    const found =
+      worldOneMissions.find((mission) => mission.id === missionId) ?? worldOneMissions[0];
+    if (found.id !== 'castle-boss') return found;
+    return selectCastleBossVariant(profile?.nickname ?? 'builder');
+  }, [missionId, profile?.nickname]);
 
   const completeOnboarding = (nextProfile: LearnerProfile) => {
     setProfile(nextProfile);

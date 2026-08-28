@@ -85,6 +85,12 @@ export type MissionDefinition = {
   optimalProgramLength: number;
   evidence: MissionEvidenceDefinition[];
   hints: string[];
+  /**
+   * Boards that share a mission id. Progress, mastery criteria and completion
+   * are all keyed on `id`, so a variant must never change it - a child handed
+   * a different castle would otherwise lose credit for the boss they beat.
+   */
+  variantId?: string;
   predictionOptions?: PredictionOption[];
   explanationPrompt?: string;
   explanationOptions?: ExplanationOption[];

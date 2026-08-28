@@ -430,6 +430,7 @@ export const castleBossVariants: MissionDefinition[] = [
   {
     ...worldOneMissions[worldOneMissions.length - 1],
     id: 'castle-boss',
+    variantId: 'ascent',
     // Straight run then a straight climb: two turns.
     optimalProgramLength: 8,
     maxCommands: 10,
@@ -440,7 +441,8 @@ export const castleBossVariants: MissionDefinition[] = [
   },
   {
     ...worldOneMissions[worldOneMissions.length - 1],
-    id: 'castle-boss-vault',
+    id: 'castle-boss',
+    variantId: 'vault',
     title: 'Castle Boss — The Vault',
     objective:
       'Byte starts at the far tower. Collect all three keys and reach the vault door in the corner.',
@@ -472,7 +474,8 @@ export const castleBossVariants: MissionDefinition[] = [
   },
   {
     ...worldOneMissions[worldOneMissions.length - 1],
-    id: 'castle-boss-ramparts',
+    id: 'castle-boss',
+    variantId: 'ramparts',
     title: 'Castle Boss — The Ramparts',
     objective:
       'The keys are spread along the ramparts. Collect all three, then reach the high gate.',
