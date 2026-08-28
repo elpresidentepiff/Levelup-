@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type {
+  EvidenceEvent,
   LearnerProfile,
   LearnerProgress,
 } from '../../packages/lesson-schema/src';
@@ -11,6 +12,7 @@ import { worldOneMissions } from '../../packages/content/src/world-one';
 import {
   applyMissionEvidence,
   createInitialProgress,
+  recordEvidenceEvents,
 } from '../../packages/mastery/src';
 import { ByteAvatar } from './src/components/ByteAvatar';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -30,6 +32,7 @@ export default function App() {
   const [profile, setProfile] = useState<LearnerProfile>();
   const [progress, setProgress] = useState<LearnerProgress>(createInitialProgress());
   const [missionId, setMissionId] = useState(worldOneMissions[0].id);
+  const progressSaveQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -37,6 +40,14 @@ export default function App() {
       document.body.style.backgroundColor = colours.background;
     }
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    progressSaveQueue.current = progressSaveQueue.current
+      .catch(() => undefined)
+      .then(() => saveProgress(progress))
+      .catch(() => undefined);
+  }, [loading, progress]);
 
   useEffect(() => {
     let active = true;
@@ -85,12 +96,18 @@ export default function App() {
             ],
           };
         }
-        void saveProgress(next);
         return next;
       });
     },
     [currentMission, profile?.nickname],
   );
+
+  const recordMissionEvidence = useCallback((events: EvidenceEvent[]) => {
+    setProgress((previous) => {
+      const next = recordEvidenceEvents(previous, events);
+      return next;
+    });
+  }, []);
 
   const continueFromMission = () => {
     const index = worldOneMissions.findIndex((mission) => mission.id === currentMission.id);
@@ -141,6 +158,7 @@ export default function App() {
           profile={profile}
           onBack={() => setScreen('world')}
           onComplete={completeMission}
+          onEvidence={recordMissionEvidence}
           onContinue={continueFromMission}
         />
       ) : null}

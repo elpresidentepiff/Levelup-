@@ -1,6 +1,7 @@
 import type {
   BoardDefinition,
   Direction,
+  MisconceptionCode,
   MissionDefinition,
   Point,
 } from '../../lesson-schema/src';
@@ -149,6 +150,33 @@ export const evaluateMission = (
   };
 };
 
+export const classifyMisconception = (
+  mission: MissionDefinition,
+  evaluation: MissionEvaluation,
+  context: { predictionCorrect?: boolean; attemptNumber: number },
+): MisconceptionCode | undefined => {
+  if (context.predictionCorrect === false) return 'prediction_mismatch';
+  if (evaluation.execution.status === 'collision') {
+    return 'collision_not_anticipated';
+  }
+  if (!evaluation.checks.withinCommandLimit) return 'unnecessary_commands';
+  if (
+    evaluation.checks.reachedGoal &&
+    !evaluation.checks.collectedEverything
+  ) {
+    return 'goal_only_ignores_collectibles';
+  }
+  if (evaluation.passed) return undefined;
+  if (mission.mode === 'debug') return 'bug_not_resolved';
+
+  const distanceFromGoal =
+    Math.abs(evaluation.execution.finalPosition.x - mission.board.goal.x) +
+    Math.abs(evaluation.execution.finalPosition.y - mission.board.goal.y);
+  if (distanceFromGoal === 1) return 'stops_one_step_short';
+  if (context.attemptNumber >= 3) return 'random_trial_and_error';
+  return 'goal_not_reached';
+};
+
 export const directionLabel: Record<Direction, string> = {
   up: 'Up',
   right: 'Right',
@@ -162,4 +190,3 @@ export const directionArrow: Record<Direction, string> = {
   down: '↓',
   left: '←',
 };
-

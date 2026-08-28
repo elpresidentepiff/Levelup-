@@ -13,14 +13,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type {
   Direction,
+  EvidenceDimension,
+  EvidenceEvent,
   LearnerProfile,
   MissionDefinition,
   Point,
 } from '../../../../packages/lesson-schema/src';
 import {
+  classifyMisconception,
   evaluateMission,
   samePoint,
 } from '../../../../packages/learning-engine/src';
+import { createMissionEvidenceEvents } from '../../../../packages/mastery/src';
 import { reviewedHintAction } from '../../../../packages/tutor-contracts/src';
 import { ActionButton } from '../components/Buttons';
 import { ByteAvatar } from '../components/ByteAvatar';
@@ -39,6 +43,7 @@ type Props = {
   profile: LearnerProfile;
   onBack: () => void;
   onComplete: (evidence: CompletionEvidence) => void;
+  onEvidence: (events: EvidenceEvent[]) => void;
   onContinue: () => void;
 };
 
@@ -50,6 +55,7 @@ export function MissionScreen({
   profile,
   onBack,
   onComplete,
+  onEvidence,
   onContinue,
 }: Props) {
   const { width } = useWindowDimensions();
@@ -69,7 +75,12 @@ export function MissionScreen({
   const [feedback, setFeedback] = useState<{ type: 'success' | 'try'; message: string }>();
   const [passed, setPassed] = useState(false);
   const [passedMissionId, setPassedMissionId] = useState<string>();
+  const [debugActions, setDebugActions] = useState(0);
   const reported = useRef(false);
+  const attemptStartedAt = useRef(Date.now());
+  const eventSequence = useRef(0);
+  const lastRunDebugActions = useRef(0);
+  const lastRunTimeToSolutionMs = useRef(0);
 
   useEffect(() => {
     setProgram(mission.initialProgram ?? []);
@@ -84,7 +95,12 @@ export function MissionScreen({
     setFeedback(undefined);
     setPassed(false);
     setPassedMissionId(undefined);
+    setDebugActions(0);
     reported.current = false;
+    attemptStartedAt.current = Date.now();
+    eventSequence.current = 0;
+    lastRunDebugActions.current = 0;
+    lastRunTimeToSolutionMs.current = 0;
   }, [mission]);
 
   useEffect(() => {
@@ -116,6 +132,37 @@ export function MissionScreen({
     if (lockedProgram) return;
     resetBoard();
     setProgram([]);
+    setDebugActions((current) => current + 1);
+  };
+
+  const emitEvidence = (
+    successByDimension: Partial<Record<EvidenceDimension, boolean>>,
+    input: {
+      attemptNumber: number;
+      timeToSolutionMs: number;
+      predictionCorrect?: boolean;
+      explanationResult?: EvidenceEvent['explanationResult'];
+      misconception?: EvidenceEvent['misconception'];
+      debugActionCount?: number;
+    },
+  ) => {
+    const timestamp = new Date().toISOString();
+    eventSequence.current += 1;
+    const events = createMissionEvidenceEvents(mission, {
+      eventIdPrefix: `${mission.id}:${timestamp}:${eventSequence.current}`,
+      successByDimension,
+      attemptNumber: input.attemptNumber,
+      hintsUsed: hintLevel,
+      timeToSolutionMs: input.timeToSolutionMs,
+      predictionBeforeRun: predictionId,
+      predictionCorrect: input.predictionCorrect,
+      programLength: program.length,
+      debugActions: input.debugActionCount ?? debugActions,
+      explanationResult: input.explanationResult,
+      misconception: input.misconception,
+      timestamp,
+    });
+    if (events.length > 0) onEvidence(events);
   };
 
   const run = async () => {
@@ -129,6 +176,39 @@ export function MissionScreen({
     setTrail([mission.board.start]);
 
     const evaluation = evaluateMission(mission, program);
+    const chosenPrediction = mission.predictionOptions?.find(
+      (option) => option.id === predictionId,
+    );
+    const predictionCorrect = mission.mode === 'predict'
+      ? Boolean(
+          chosenPrediction &&
+          samePoint(chosenPrediction.point, evaluation.execution.finalPosition),
+        )
+      : undefined;
+    const missionPassed = evaluation.passed && predictionCorrect !== false;
+    const misconception = classifyMisconception(mission, evaluation, {
+      predictionCorrect,
+      attemptNumber,
+    });
+    const successByDimension: Partial<Record<EvidenceDimension, boolean>> = {};
+    for (const definition of mission.evidence) {
+      if (definition.dimension === 'explain') continue;
+      successByDimension[definition.dimension] =
+        definition.dimension === 'predict'
+          ? predictionCorrect ?? evaluation.passed
+          : evaluation.passed;
+    }
+    const timeToSolutionMs = Date.now() - attemptStartedAt.current;
+    lastRunTimeToSolutionMs.current = timeToSolutionMs;
+    lastRunDebugActions.current = debugActions;
+    emitEvidence(successByDimension, {
+      attemptNumber,
+      timeToSolutionMs,
+      predictionCorrect,
+      misconception,
+    });
+    attemptStartedAt.current = Date.now();
+    setDebugActions(0);
     const animatedTrail: Point[] = [mission.board.start];
     for (const nextPosition of evaluation.execution.trail.slice(1)) {
       await delay(profile.ageMode === 'explorer' ? 380 : 270);
@@ -139,14 +219,7 @@ export function MissionScreen({
     }
 
     setRunning(false);
-    let missionPassed = evaluation.passed;
-
     if (mission.mode === 'predict') {
-      const chosen = mission.predictionOptions?.find((option) => option.id === predictionId);
-      const predictionCorrect = Boolean(
-        chosen && samePoint(chosen.point, evaluation.execution.finalPosition),
-      );
-      missionPassed = missionPassed && predictionCorrect;
       if (!predictionCorrect) {
         setFeedback({
           type: 'try',
@@ -193,7 +266,18 @@ export function MissionScreen({
 
   const answerExplanation = (optionId: string) => {
     const option = mission.explanationOptions?.find((item) => item.id === optionId);
-    if (option?.correct) {
+    const correct = option?.correct === true;
+    emitEvidence(
+      { explain: correct },
+      {
+        attemptNumber: Math.max(1, attempts),
+        timeToSolutionMs: lastRunTimeToSolutionMs.current,
+        explanationResult: correct ? 'correct' : 'incorrect',
+        debugActionCount: lastRunDebugActions.current,
+      },
+    );
+    attemptStartedAt.current = Date.now();
+    if (correct) {
       setAwaitingExplanation(false);
       completeMission();
       return;
@@ -304,6 +388,7 @@ export function MissionScreen({
               onChange={(nextProgram) => {
                 resetBoard();
                 setProgram(nextProgram);
+                setDebugActions((current) => current + 1);
               }}
             />
 

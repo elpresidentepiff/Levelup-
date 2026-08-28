@@ -27,6 +27,10 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['sequence'],
     allowedCommands: [...allDirections],
     maxCommands: 5,
+    optimalProgramLength: 3,
+    evidence: [
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-basic-route' },
+    ],
     hints: [
       'Start by looking at which direction the glow is from Byte.',
       'Byte needs to move sideways before moving up.',
@@ -59,6 +63,10 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['sequence'],
     allowedCommands: [...allDirections],
     maxCommands: 8,
+    optimalProgramLength: 6,
+    evidence: [
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-ordered-collection' },
+    ],
     hints: [
       'Plan a route that visits the gems before the portal.',
       'The clear path starts along the bottom row.',
@@ -85,6 +93,11 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['prediction', 'sequence'],
     allowedCommands: [...allDirections],
     initialProgram: ['right', 'right', 'up'],
+    optimalProgramLength: 3,
+    evidence: [
+      { skillId: 'prediction', dimension: 'predict', context: 'grid-fixed-program' },
+      { skillId: 'sequence', dimension: 'predict', context: 'grid-fixed-program' },
+    ],
     predictionOptions: [
       { id: 'a', label: 'Purple A', point: { x: 3, y: 2 } },
       { id: 'b', label: 'Blue B', point: { x: 2, y: 2 } },
@@ -117,6 +130,11 @@ export const worldOneMissions: MissionDefinition[] = [
     allowedCommands: [...allDirections],
     initialProgram: ['right', 'right', 'up', 'right'],
     maxCommands: 6,
+    optimalProgramLength: 4,
+    evidence: [
+      { skillId: 'debugging', dimension: 'debug', context: 'grid-obstacle-repair' },
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-obstacle-repair' },
+    ],
     hints: [
       'Run it once and notice the exact step where Byte stops.',
       'Byte must move Up before crossing the blocked square.',
@@ -147,6 +165,11 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['sequence', 'creative_application'],
     allowedCommands: [...allDirections],
     maxCommands: 10,
+    optimalProgramLength: 8,
+    evidence: [
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-multiple-solutions' },
+      { skillId: 'creative_application', dimension: 'apply', context: 'grid-multiple-solutions' },
+    ],
     hints: [
       'Look for a clear path around the outside edge.',
       'You can travel along the bottom and then up the right side.',
@@ -173,6 +196,11 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['efficiency', 'sequence'],
     allowedCommands: [...allDirections],
     maxCommands: 6,
+    optimalProgramLength: 6,
+    evidence: [
+      { skillId: 'efficiency', dimension: 'apply', context: 'grid-command-limit' },
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-command-limit' },
+    ],
     hints: [
       'The direct line is blocked, so go around it once.',
       'Move one row away, cross, then return to the middle.',
@@ -202,6 +230,11 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['explanation', 'sequence'],
     allowedCommands: [...allDirections],
     maxCommands: 8,
+    optimalProgramLength: 6,
+    evidence: [
+      { skillId: 'explanation', dimension: 'explain', context: 'grid-route-explanation' },
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-route-explanation' },
+    ],
     explanationPrompt: 'Why does your route work?',
     explanationOptions: [
       {
@@ -239,6 +272,11 @@ export const worldOneMissions: MissionDefinition[] = [
     allowedCommands: [...allDirections],
     initialProgram: ['right', 'right', 'up', 'down', 'right', 'right'],
     maxCommands: 6,
+    optimalProgramLength: 6,
+    evidence: [
+      { skillId: 'debugging', dimension: 'debug', context: 'grid-changed-instruction' },
+      { skillId: 'prediction', dimension: 'recognise', context: 'grid-changed-instruction' },
+    ],
     hints: [
       'Run it slowly and watch where Byte changes direction.',
       'One arrow points Down when Byte needs to keep climbing.',
@@ -268,6 +306,11 @@ export const worldOneMissions: MissionDefinition[] = [
     },
     skills: ['creative_application', 'sequence'],
     allowedCommands: [...allDirections],
+    optimalProgramLength: 8,
+    evidence: [
+      { skillId: 'creative_application', dimension: 'apply', context: 'grid-open-route' },
+      { skillId: 'sequence', dimension: 'apply', context: 'grid-open-route' },
+    ],
     hints: [
       'Choose whether your route goes above or below the tall wall.',
       'The outside edges are both safe.',
@@ -303,6 +346,11 @@ export const worldOneMissions: MissionDefinition[] = [
     skills: ['sequence', 'prediction', 'debugging', 'creative_application'],
     allowedCommands: [...allDirections],
     maxCommands: 10,
+    optimalProgramLength: 8,
+    evidence: [
+      { skillId: 'sequence', dimension: 'transfer', context: 'grid-integrated-boss' },
+      { skillId: 'creative_application', dimension: 'transfer', context: 'grid-integrated-boss' },
+    ],
     hints: [],
   },
 ];
