@@ -23,11 +23,19 @@ import { MissionScreen, type CompletionEvidence } from './src/screens/MissionScr
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { ParentDashboardScreen } from './src/screens/ParentDashboardScreen';
 import { ParentGateScreen } from './src/screens/ParentGateScreen';
+import { TransferTrialScreen } from './src/screens/TransferTrialScreen';
 import { WorldMapScreen } from './src/screens/WorldMapScreen';
 import { loadStoredState, saveProfile, saveProgress } from './src/storage';
 import { colours } from './src/theme';
 
-type Screen = 'onboarding' | 'home' | 'world' | 'mission' | 'parentGate' | 'parent';
+type Screen =
+  | 'onboarding'
+  | 'home'
+  | 'world'
+  | 'mission'
+  | 'transfer'
+  | 'parentGate'
+  | 'parent';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -165,6 +173,20 @@ export default function App() {
           progress={progress}
           onBack={() => setScreen('home')}
           onOpenMission={openMission}
+          // The trials only appear once the castle is beaten. Asking a child to
+          // transfer an idea they have not yet applied is not a transfer test,
+          // it is an unfamiliar puzzle.
+          onOpenTransferTrials={
+            progress.completedMissionIds.includes('castle-boss')
+              ? () => setScreen('transfer')
+              : undefined
+          }
+        />
+      ) : null}
+      {screen === 'transfer' ? (
+        <TransferTrialScreen
+          onBack={() => setScreen('world')}
+          onEvidence={recordMissionEvidence}
         />
       ) : null}
       {screen === 'mission' && profile ? (

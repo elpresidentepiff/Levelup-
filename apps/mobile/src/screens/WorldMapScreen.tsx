@@ -11,9 +11,16 @@ type Props = {
   progress: LearnerProgress;
   onBack: () => void;
   onOpenMission: (missionId: string) => void;
+  /** Absent until Castle Boss is beaten - see App. */
+  onOpenTransferTrials?: () => void;
 };
 
-export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
+export function WorldMapScreen({
+  progress,
+  onBack,
+  onOpenMission,
+  onOpenTransferTrials,
+}: Props) {
   const missionProgression = missionProgressionForWorld(progress, worldOneMissions);
 
   return (
@@ -74,7 +81,22 @@ export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
               </Pressable>
             );
           })}
-        </View>
+        
+        {onOpenTransferTrials ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open the transfer trials: three challenges away from the grid"
+            onPress={onOpenTransferTrials}
+            style={styles.transferEntry}
+          >
+            <Text style={styles.transferEyebrow}>AWAY FROM THE GRID</Text>
+            <Text style={styles.transferTitle}>Three trials</Text>
+            <Text style={styles.transferBody}>
+              A rocket, a tune and a recipe. No board, no Byte — the same thinking somewhere new.
+            </Text>
+          </Pressable>
+        ) : null}
+</View>
 
         <Text style={styles.nextTitle}>Next worlds</Text>
         <View style={styles.nextList}>
@@ -95,6 +117,23 @@ export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
 }
 
 const styles = StyleSheet.create({
+  transferEntry: {
+    backgroundColor: colours.surface,
+    borderColor: colours.purple,
+    borderRadius: 18,
+    borderWidth: 2,
+    gap: 6,
+    marginTop: 18,
+    padding: 18,
+  },
+  transferEyebrow: {
+    color: colours.purple,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+  },
+  transferTitle: { color: colours.ink, fontSize: 20, fontWeight: '900' },
+  transferBody: { color: colours.muted, fontSize: 14, lineHeight: 20 },
   safe: { flex: 1, backgroundColor: colours.background },
   content: { width: '100%', maxWidth: 920, alignSelf: 'center', paddingHorizontal: spacing.md, paddingBottom: 50 },
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8, marginBottom: 20 },
