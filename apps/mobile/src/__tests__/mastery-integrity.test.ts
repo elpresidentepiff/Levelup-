@@ -15,13 +15,8 @@ import {
  *
  * docs/curriculum/WORLD_1.md states that completion is not mastery, and
  * docs/product/PRODUCT.md is to state that repeated play is not proof of it.
- * Nothing in the code enforced either, so this suite encodes the rule the
- * product already promises.
- *
- * These fail against the current implementation, and they are meant to. Any
- * implementation of the learning-integrity work must turn them green without
- * weakening the assertions - a mastery ledger that satisfies these is doing
- * the job; one that does not is decoration.
+ * The mastery model enforces those rules; this permanent regression guard must
+ * stay green without weakening its assertions.
  */
 
 const mission = (id: string) => {
