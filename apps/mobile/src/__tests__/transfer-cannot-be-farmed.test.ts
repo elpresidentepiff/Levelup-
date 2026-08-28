@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { skillGraph } from '../../../../packages/content/src/skill-graph';
-import { castleBossVariants } from '../../../../packages/content/src/world-one';
+import {
+  castleBossVariants,
+  worldOneMissions,
+} from '../../../../packages/content/src/world-one';
 import { transferTrials } from '../../../../packages/content/src/transfer-trials';
 import {
   createInitialProgress,
@@ -82,35 +85,38 @@ describe('transfer evidence cannot be farmed', () => {
     expect(transferRequirement?.met, 'one repeated trial must not satisfy transfer').toBe(false);
   });
 
-  it('leaves transfer mastery actually reachable for every skill that requires it', () => {
-    // The mirror of the farming test. A bar nothing can clear is not a high
-    // bar, it is a broken one - and it fails silently, because a skill that can
-    // never be mastered looks exactly like a child who has not got there yet.
+  it('leaves every V2 dimension reachable from World 1 content', () => {
+    // The mirror of the farming test, across every dimension rather than just
+    // transfer. A bar nothing can clear is not a high bar, it is a broken one,
+    // and it fails silently: a capability nobody can reach looks exactly like a
+    // child who has not reached it yet.
     //
-    // Contexts come from two places: the Castle Boss variants and these trials.
-    const bossContexts: Record<string, Set<string>> = {};
-    for (const variant of castleBossVariants) {
-      for (const item of variant.evidence.filter((e) => e.dimension === 'transfer')) {
-        (bossContexts[item.skillId] ??= new Set()).add(item.context);
-      }
+    // This is the gate on making the V2 evaluator authoritative. Until it
+    // passes, switching the visible labels would tell a child who did
+    // everything correctly that they had mastered nothing.
+    const contexts: Record<string, Record<string, Set<string>>> = {};
+    const note = (skillId: string, dimension: string, context: string) => {
+      ((contexts[skillId] ??= {})[dimension] ??= new Set()).add(context);
+    };
+
+    for (const mission of [...worldOneMissions, ...castleBossVariants]) {
+      for (const item of mission.evidence) note(item.skillId, item.dimension, item.context);
     }
-    for (const trial of transferTrials) {
-      (bossContexts[trial.skillId] ??= new Set()).add(trial.context);
-    }
+    for (const trial of transferTrials) note(trial.skillId, trial.dimension, trial.context);
 
     const shortfalls: string[] = [];
     for (const [skillId, definition] of Object.entries(skillGraph)) {
-      const requirement = definition.masteryRequirements.transfer;
-      if (!requirement) continue;
-      const available = bossContexts[skillId]?.size ?? 0;
-      if (available < requirement.minimumContexts) {
-        shortfalls.push(
-          `${skillId}: needs ${requirement.minimumContexts} transfer contexts, content provides ${available}`,
-        );
+      for (const [dimension, requirement] of Object.entries(definition.masteryRequirements)) {
+        const available = contexts[skillId]?.[dimension]?.size ?? 0;
+        if (available < requirement.minimumContexts) {
+          shortfalls.push(
+            `${skillId}.${dimension}: needs ${requirement.minimumContexts} contexts, content provides ${available}`,
+          );
+        }
       }
     }
 
-    expect(shortfalls, shortfalls.join('; ')).toEqual([]);
+    expect(shortfalls, `\n  ${shortfalls.join('\n  ')}\n`).toEqual([]);
   });
 
   it('ignores a duplicate event id, so a resubmitted answer counts once', () => {
