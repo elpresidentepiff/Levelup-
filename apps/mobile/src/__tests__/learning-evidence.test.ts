@@ -34,6 +34,10 @@ const solutions: Record<string, Direction[]> = {
   'tell-byte': ['right', 'right', 'right', 'up', 'up', 'up'],
   'secret-bug': ['right', 'right', 'up', 'up', 'right', 'right'],
   'build-your-maze': ['up', 'up', 'up', 'up', 'right', 'right', 'right', 'right'],
+  // Both routes below are the true optimum for their board, confirmed by the
+  // same breadth-first search that vets the boss variants - not by eye.
+  'long-way-round': ['down', 'right', 'right', 'right', 'up', 'right'],
+  'out-of-order': ['right', 'right', 'up', 'up'],
   'castle-boss': ['right', 'right', 'right', 'right', 'up', 'up', 'up', 'up'],
 };
 

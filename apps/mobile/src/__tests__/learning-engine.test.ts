@@ -22,6 +22,8 @@ describe('deterministic learning engine', () => {
       'tell-byte': ['right', 'right', 'right', 'up', 'up', 'up'],
       'secret-bug': ['right', 'right', 'up', 'up', 'right', 'right'],
       'build-your-maze': ['up', 'up', 'up', 'up', 'right', 'right', 'right', 'right'],
+      'long-way-round': ['down', 'right', 'right', 'right', 'up', 'right'],
+      'out-of-order': ['right', 'right', 'up', 'up'],
       'castle-boss': ['right', 'right', 'right', 'right', 'up', 'up', 'up', 'up'],
     } as const;
 

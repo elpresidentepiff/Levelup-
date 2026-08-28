@@ -25,6 +25,7 @@ import {
   samePoint,
 } from '../../../../packages/learning-engine/src';
 import { createMissionEvidenceEvents } from '../../../../packages/mastery/src';
+import { worldOneMissions } from '../../../../packages/content/src/world-one';
 import { reviewedHintAction } from '../../../../packages/tutor-contracts/src';
 import { ActionButton } from '../components/Buttons';
 import { ByteAvatar } from '../components/ByteAvatar';
@@ -245,11 +246,14 @@ export function MissionScreen({
       return;
     }
 
-    if (mission.mode === 'explain') {
+    if (mission.explanationOptions?.length) {
       setAwaitingExplanation(true);
       setFeedback({
         type: 'success',
-        message: 'Your route works. One more step: explain why.',
+        message:
+          mission.mode === 'debug'
+            ? 'You fixed it. One more step: say what was wrong.'
+            : 'Your route works. One more step: explain why.',
       });
       return;
     }
@@ -309,9 +313,16 @@ export function MissionScreen({
             <Text style={styles.backText}>‹ Map</Text>
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.headerEyebrow}>MISSION {mission.number} OF 10</Text>
+            <Text style={styles.headerEyebrow}>
+              MISSION {mission.number} OF {worldOneMissions.length}
+            </Text>
             <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${mission.number * 10}%` }]} />
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${(mission.number / worldOneMissions.length) * 100}%` },
+                ]}
+              />
             </View>
           </View>
           <View style={styles.modeBadge}>
@@ -459,7 +470,11 @@ export function MissionScreen({
 
             {passed ? (
               <ActionButton
-                label={mission.number === 10 ? 'See what you learned' : 'Next mission'}
+                label={
+                  mission.number === worldOneMissions.length
+                    ? 'See what you learned'
+                    : 'Next mission'
+                }
                 onPress={onContinue}
                 style={styles.continueButton}
               />
