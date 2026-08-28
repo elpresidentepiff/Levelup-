@@ -229,7 +229,7 @@ export const worldOneMissions: MissionDefinition[] = [
         label: 'Going around the block costs two extra moves, and there is no way past it.',
         correct: true,
       },
-      { id: 'grid-size', label: 'Six is simply the largest number of tiles allowed.' },
+      { id: 'six-squares', label: 'The portal is exactly six squares away in a straight line.' },
       { id: 'diagonal', label: 'Byte would need to move diagonally, which takes longer.' },
     ],
     hints: [
@@ -319,7 +319,7 @@ export const worldOneMissions: MissionDefinition[] = [
         label: 'One instruction sent Byte back down, undoing a climb it had already made.',
         correct: true,
       },
-      { id: 'ran-out', label: 'Byte ran out of instructions before it arrived.' },
+      { id: 'ran-out', label: 'Byte needed more than six instructions to reach the portal.' },
       { id: 'wall', label: 'Byte was stopped by a wall on the way up.' },
     ],
     hints: [
@@ -406,7 +406,7 @@ export const worldOneMissions: MissionDefinition[] = [
         correct: true,
       },
       { id: 'downhill', label: 'Byte moves faster going downwards.' },
-      { id: 'shorter-wall', label: 'The bottom of the wall is thinner than the top.' },
+      { id: 'top-blocked', label: 'The gap at the top of the wall is too small for Byte to fit through.' },
     ],
     hints: [
       'Both ends of the wall are open. Count the steps to each one before you build.',
