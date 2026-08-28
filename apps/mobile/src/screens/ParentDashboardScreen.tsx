@@ -7,9 +7,13 @@ import type {
   MasteryEntry,
   SkillId,
 } from '../../../../packages/lesson-schema/src';
-import { worldOneMissions } from '../../../../packages/content/src/world-one';
 import {
-  masteryBand,
+  worldOneMissions,
+  worldOneSkillOutcomes,
+} from '../../../../packages/content/src/world-one';
+import {
+  masteryBandForOutcome,
+  masteryProgress,
   skillLabels,
 } from '../../../../packages/mastery/src';
 import { colours, radius, shadow, spacing } from '../theme';
@@ -23,9 +27,18 @@ type Props = {
 export function ParentDashboardScreen({ profile, progress, onBack }: Props) {
   const entries = Object.entries(progress.mastery) as Array<[SkillId, MasteryEntry]>;
   const practised = entries.filter(([, entry]) => entry.evidenceCount > 0);
-  const strongest = [...practised].sort((left, right) => right[1].score - left[1].score)[0];
-  const reinforcement = practised.length > 1
-    ? [...practised].sort((left, right) => left[1].score - right[1].score)[0]
+  const masteryTargets = practised.filter(
+    ([skill]) => worldOneSkillOutcomes[skill].target === 'mastery',
+  );
+  const evidenceProgress = ([skill, entry]: [SkillId, MasteryEntry]) =>
+    masteryProgress(entry, worldOneSkillOutcomes[skill]);
+  const strongest = [...masteryTargets].sort(
+    (left, right) => evidenceProgress(right) - evidenceProgress(left),
+  )[0];
+  const reinforcement = masteryTargets.length > 1
+    ? [...masteryTargets].sort(
+        (left, right) => evidenceProgress(left) - evidenceProgress(right),
+      )[0]
     : undefined;
   const completed = progress.completedMissionIds.length;
 
@@ -54,18 +67,22 @@ export function ParentDashboardScreen({ profile, progress, onBack }: Props) {
           <Text style={styles.cardTitle}>What the evidence shows</Text>
           <Text style={styles.cardIntro}>Scores grow from successful prediction, construction, debugging, explanation and creation—not from time spent in the app.</Text>
           <View style={styles.masteryList}>
-            {entries.map(([skill, entry]) => (
-              <View key={skill} style={styles.masteryRow}>
-                <View style={styles.masteryTop}>
-                  <Text style={styles.skill}>{skillLabels[skill]}</Text>
-                  <Text style={styles.band}>{masteryBand(entry.score)}</Text>
+            {entries.map(([skill, entry]) => {
+              const outcome = worldOneSkillOutcomes[skill];
+              const progressPercent = masteryProgress(entry, outcome);
+              return (
+                <View key={skill} style={styles.masteryRow}>
+                  <View style={styles.masteryTop}>
+                    <Text style={styles.skill}>{skillLabels[skill]}</Text>
+                    <Text style={styles.band}>{masteryBandForOutcome(entry, outcome)}</Text>
+                  </View>
+                  <View style={styles.track}>
+                    <View style={[styles.fill, { width: `${progressPercent}%` }]} />
+                  </View>
+                  <Text style={styles.evidence}>{entry.evidenceCount} evidence event{entry.evidenceCount === 1 ? '' : 's'} • {entry.independentSuccesses} independent • {outcome.target === 'mastery' ? 'World 1 mastery target' : 'introduced in World 1'}</Text>
                 </View>
-                <View style={styles.track}>
-                  <View style={[styles.fill, { width: `${entry.score}%` }]} />
-                </View>
-                <Text style={styles.evidence}>{entry.evidenceCount} evidence event{entry.evidenceCount === 1 ? '' : 's'} • {entry.independentSuccesses} independent</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 

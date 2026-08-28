@@ -5,6 +5,7 @@ import type {
   MissionDefinition,
   SavedBuild,
   SkillId,
+  WorldSkillOutcome,
 } from '../../lesson-schema/src';
 
 export const skillLabels: Record<SkillId, string> = {
@@ -241,4 +242,60 @@ export const masteryBand = (score: number) => {
   if (score >= 35) return 'Getting good';
   if (score > 0) return 'Learning';
   return 'Not started';
+};
+
+export type MasteryBand =
+  | 'Not started'
+  | 'Introduced'
+  | 'Learning'
+  | 'Getting good'
+  | 'Mastered';
+
+const qualifyingMissionEvidence = (entry: MasteryEntry) =>
+  Object.entries(entry.missionEvidence).filter(
+    ([, evidence]) => evidence.scoreAwarded > 0,
+  );
+
+export const masteryProgress = (
+  entry: MasteryEntry,
+  outcome: WorldSkillOutcome,
+) => {
+  if (entry.score <= 0) return 0;
+  if (outcome.target === 'introduced') {
+    return Math.min(100, Math.round((entry.score / firstTryIndependentScore) * 100));
+  }
+
+  const evidence = qualifyingMissionEvidence(entry);
+  const independentMissionIds = new Set(
+    evidence
+      .filter(([, item]) => item.independentSuccesses > 0)
+      .map(([missionId]) => missionId),
+  );
+  const requiredMissionIds = outcome.criteria.requiredMissionIds ?? [];
+  const requiredIndependentCount = requiredMissionIds.filter((missionId) =>
+    independentMissionIds.has(missionId),
+  ).length;
+  const ratios = [
+    entry.score / outcome.criteria.minimumScore,
+    evidence.length / outcome.criteria.minimumDistinctMissions,
+    independentMissionIds.size / outcome.criteria.minimumIndependentMissions,
+    requiredMissionIds.length === 0
+      ? 1
+      : requiredIndependentCount / requiredMissionIds.length,
+  ];
+
+  return Math.max(0, Math.min(100, Math.round(Math.min(...ratios) * 100)));
+};
+
+export const masteryBandForOutcome = (
+  entry: MasteryEntry,
+  outcome: WorldSkillOutcome,
+): MasteryBand => {
+  if (entry.score <= 0) return 'Not started';
+  if (outcome.target === 'introduced') return 'Introduced';
+
+  const progress = masteryProgress(entry, outcome);
+  if (progress >= 100) return 'Mastered';
+  if (progress >= 50) return 'Getting good';
+  return 'Learning';
 };

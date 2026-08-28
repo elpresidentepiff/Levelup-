@@ -1,4 +1,8 @@
-import type { MissionDefinition } from '../../lesson-schema/src';
+import type {
+  MissionDefinition,
+  SkillId,
+  WorldSkillOutcome,
+} from '../../lesson-schema/src';
 
 const allDirections = ['up', 'right', 'down', 'left'] as const;
 
@@ -303,6 +307,56 @@ export const worldOneMissions: MissionDefinition[] = [
   },
 ];
 
+export const worldOneSkillOutcomes: Record<SkillId, WorldSkillOutcome> = {
+  sequence: {
+    skillId: 'sequence',
+    target: 'mastery',
+    criteria: {
+      minimumScore: 70,
+      minimumDistinctMissions: 4,
+      minimumIndependentMissions: 4,
+      requiredMissionIds: ['castle-boss'],
+    },
+  },
+  prediction: {
+    skillId: 'prediction',
+    target: 'mastery',
+    criteria: {
+      minimumScore: 54,
+      minimumDistinctMissions: 3,
+      minimumIndependentMissions: 3,
+      requiredMissionIds: ['castle-boss'],
+    },
+  },
+  debugging: {
+    skillId: 'debugging',
+    target: 'mastery',
+    criteria: {
+      minimumScore: 54,
+      minimumDistinctMissions: 3,
+      minimumIndependentMissions: 3,
+      requiredMissionIds: ['castle-boss'],
+    },
+  },
+  creative_application: {
+    skillId: 'creative_application',
+    target: 'mastery',
+    criteria: {
+      minimumScore: 54,
+      minimumDistinctMissions: 3,
+      minimumIndependentMissions: 3,
+      requiredMissionIds: ['castle-boss'],
+    },
+  },
+  efficiency: {
+    skillId: 'efficiency',
+    target: 'introduced',
+  },
+  explanation: {
+    skillId: 'explanation',
+    target: 'introduced',
+  },
+};
+
 export const getMissionById = (id: string) =>
   worldOneMissions.find((mission) => mission.id === id);
-

@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { worldOneMissions } from '../../../../packages/content/src/world-one';
+import {
+  worldOneMissions,
+  worldOneSkillOutcomes,
+} from '../../../../packages/content/src/world-one';
 import {
   applyMissionEvidence,
   createInitialProgress,
   hydrateProgress,
+  masteryBandForOutcome,
 } from '../../../../packages/mastery/src';
 
 const wakeByte = worldOneMissions.find((mission) => mission.id === 'wake-byte');
@@ -27,6 +31,12 @@ describe('mission-specific mastery evidence', () => {
     expect(scores.slice(0, 4)).toEqual([18, 21, 22, 22]);
     expect(scores.at(-1)).toBe(22);
     expect(progress.mastery.sequence.missionEvidence['wake-byte'].scoreAwarded).toBe(22);
+    expect(
+      masteryBandForOutcome(
+        progress.mastery.sequence,
+        worldOneSkillOutcomes.sequence,
+      ),
+    ).not.toBe('Mastered');
   });
 
   it('recognises improved independence without letting supported repetition dominate', () => {
@@ -71,5 +81,38 @@ describe('mission-specific mastery evidence', () => {
 
     expect(hydrated.mastery.sequence.score).toBe(34);
     expect(hydrated.mastery.sequence.missionEvidence).toEqual({});
+  });
+
+  it('keeps every World 1 mastery target reachable through genuine independent play', () => {
+    expect(
+      Object.fromEntries(
+        Object.entries(worldOneSkillOutcomes).map(([skill, outcome]) => [
+          skill,
+          outcome.target,
+        ]),
+      ),
+    ).toEqual({
+      sequence: 'mastery',
+      prediction: 'mastery',
+      debugging: 'mastery',
+      efficiency: 'introduced',
+      explanation: 'introduced',
+      creative_application: 'mastery',
+    });
+
+    let progress = createInitialProgress();
+
+    for (const mission of worldOneMissions) {
+      progress = applyMissionEvidence(progress, mission, {
+        hintsUsed: 0,
+        attempts: 1,
+      });
+    }
+
+    for (const [skill, outcome] of Object.entries(worldOneSkillOutcomes)) {
+      const entry = progress.mastery[skill as keyof typeof progress.mastery];
+      const band = masteryBandForOutcome(entry, outcome);
+      expect(band).toBe(outcome.target === 'mastery' ? 'Mastered' : 'Introduced');
+    }
   });
 });

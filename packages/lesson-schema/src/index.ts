@@ -88,6 +88,24 @@ export type MasteryEntry = {
   lastPractised?: string;
 };
 
+export type SkillMasteryCriteria = {
+  minimumScore: number;
+  minimumDistinctMissions: number;
+  minimumIndependentMissions: number;
+  requiredMissionIds?: string[];
+};
+
+export type WorldSkillOutcome =
+  | {
+      skillId: SkillId;
+      target: 'introduced';
+    }
+  | {
+      skillId: SkillId;
+      target: 'mastery';
+      criteria: SkillMasteryCriteria;
+    };
+
 export type SavedBuild = {
   id: string;
   title: string;
