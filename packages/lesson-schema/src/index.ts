@@ -70,11 +70,21 @@ export type LearnerProfile = {
   interest: 'game' | 'robot' | 'app' | 'animation' | 'world' | 'ai';
 };
 
+export type MissionMasteryEvidence = {
+  successCount: number;
+  independentSuccesses: number;
+  supportedSuccesses: number;
+  bestEvidenceScore: number;
+  scoreAwarded: number;
+  lastPractised: string;
+};
+
 export type MasteryEntry = {
   score: number;
   evidenceCount: number;
   independentSuccesses: number;
   hintSuccesses: number;
+  missionEvidence: Record<string, MissionMasteryEvidence>;
   lastPractised?: string;
 };
 
@@ -91,4 +101,3 @@ export type LearnerProgress = {
   mastery: Record<SkillId, MasteryEntry>;
   savedBuilds: SavedBuild[];
 };
-
