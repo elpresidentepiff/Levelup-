@@ -94,24 +94,37 @@ describe('transfer evidence cannot be farmed', () => {
     // This is the gate on making the V2 evaluator authoritative. Until it
     // passes, switching the visible labels would tell a child who did
     // everything correctly that they had mastered nothing.
-    const contexts: Record<string, Record<string, Set<string>>> = {};
-    const note = (skillId: string, dimension: string, context: string) => {
-      ((contexts[skillId] ??= {})[dimension] ??= new Set()).add(context);
-    };
-
-    for (const mission of [...worldOneMissions, ...castleBossVariants]) {
-      for (const item of mission.evidence) note(item.skillId, item.dimension, item.context);
-    }
-    for (const trial of transferTrials) note(trial.skillId, trial.dimension, trial.context);
-
+    // One child plays ONE castle. Counting all three variants together was the
+    // bug this gate existed to prevent, committed by the gate itself: it read
+    // creative_application.transfer as covered by three boss contexts when a
+    // child can only ever collect one of them, and reported the world reachable
+    // while a capability was permanently out of reach. Every variant is checked
+    // on its own, because a child unlucky enough to draw the thinnest castle
+    // must still be able to finish the world.
     const shortfalls: string[] = [];
-    for (const [skillId, definition] of Object.entries(skillGraph)) {
-      for (const [dimension, requirement] of Object.entries(definition.masteryRequirements)) {
-        const available = contexts[skillId]?.[dimension]?.size ?? 0;
-        if (available < requirement.minimumContexts) {
-          shortfalls.push(
-            `${skillId}.${dimension}: needs ${requirement.minimumContexts} contexts, content provides ${available}`,
-          );
+
+    for (const variant of castleBossVariants) {
+      const contexts: Record<string, Record<string, Set<string>>> = {};
+      const note = (skillId: string, dimension: string, context: string) => {
+        ((contexts[skillId] ??= {})[dimension] ??= new Set()).add(context);
+      };
+
+      const played = worldOneMissions.map((mission) =>
+        mission.id === variant.id ? variant : mission,
+      );
+      for (const mission of played) {
+        for (const item of mission.evidence) note(item.skillId, item.dimension, item.context);
+      }
+      for (const trial of transferTrials) note(trial.skillId, trial.dimension, trial.context);
+
+      for (const [skillId, definition] of Object.entries(skillGraph)) {
+        for (const [dimension, requirement] of Object.entries(definition.masteryRequirements)) {
+          const available = contexts[skillId]?.[dimension]?.size ?? 0;
+          if (available < requirement.minimumContexts) {
+            shortfalls.push(
+              `[${variant.variantId}] ${skillId}.${dimension}: needs ${requirement.minimumContexts} contexts, a child can collect ${available}`,
+            );
+          }
         }
       }
     }

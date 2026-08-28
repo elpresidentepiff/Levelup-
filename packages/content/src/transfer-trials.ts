@@ -201,6 +201,28 @@ export const transferTrials: TransferTrial[] = [
     interaction: 'choose-reason',
     solution: 'put-one-scoop-in-the-blue-bowl-by-the-door',
   },
+  {
+    id: 'new-machine',
+    title: 'A different machine',
+    eyebrow: 'Same idea, new job',
+    prompt:
+      'Byte follows a list of steps. Your friend has a music box that follows a list too. What do you already know that helps you use it?',
+    because:
+      'The machine changed and the idea did not. A list of steps, followed in order, does the same job whatever is reading it.',
+    skillId: 'creative_application',
+    dimension: 'transfer',
+    // The castle is the only place creative application is evidenced, and a
+    // child plays exactly one castle. Without a second context outside the
+    // grid, the capability could never be earned however well a child played.
+    context: 'new-machine-plan',
+    answerVocabulary: [
+      'write-the-steps-in-order',
+      'press-buttons-until-it-works',
+      'copy-someone-elses-song',
+    ],
+    interaction: 'choose-reason',
+    solution: 'write-the-steps-in-order',
+  },
 ];
 
 /** The step order a learner is shown for the recipe, already broken. */
