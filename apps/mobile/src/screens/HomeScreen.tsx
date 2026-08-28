@@ -75,14 +75,22 @@ export function HomeScreen({ profile, progress, onOpenWorld, onOpenParent }: Pro
               <Text style={styles.lightning}>⚡</Text>
             </View>
             <View style={styles.progressLabelRow}>
-              <Text style={styles.progressLabel}>{completed} of 10 missions</Text>
+              <Text style={styles.progressLabel}>
+                {completed} of {worldOneMissions.length} missions
+              </Text>
               <Text style={styles.progressLabel}>{percent}%</Text>
             </View>
             <View style={styles.track}>
               <View style={[styles.fill, { width: `${percent}%` }]} />
             </View>
             <ActionButton
-              label={completed === 0 ? 'Begin adventure' : completed === 10 ? 'Play again' : 'Continue building'}
+              label={
+                completed === 0
+                  ? 'Begin adventure'
+                  : completed === worldOneMissions.length
+                    ? 'Play again'
+                    : 'Continue building'
+              }
               onPress={onOpenWorld}
               style={styles.cta}
             />
