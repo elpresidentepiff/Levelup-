@@ -41,9 +41,17 @@ export function TransferTrialScreen({ onBack, onEvidence }: Props) {
 
   const trial: TransferTrial = transferTrials[index];
   const shownSteps = useMemo(
-    () => (trial.interaction === 'order' ? [...trial.answerVocabulary].reverse() : recipeAsGiven),
+    () => (trial.interaction === 'order' ? [...trial.answerVocabulary].reverse() : []),
     [trial],
   );
+  // Each trial carries its own stimulus, so the screen never has to know which
+  // trial it is rendering.
+  const stimulus = useMemo(() => {
+    if (trial.given) return trial.given;
+    if (trial.id === 'melody-next') return melodyAsGiven;
+    if (trial.id === 'recipe-repair') return recipeAsGiven;
+    return [];
+  }, [trial]);
 
   const reset = (nextIndex: number) => {
     setIndex(nextIndex);
@@ -142,25 +150,26 @@ export function TransferTrialScreen({ onBack, onEvidence }: Props) {
         </View>
       ) : (
         <View>
-          {trial.interaction === 'choose-next' ? (
-            <Text style={styles.sequence}>{melodyAsGiven.map(label).join('  ·  ')}  ·  ?</Text>
-          ) : (
-            <View style={styles.chips}>
-              {recipeAsGiven.map((step, position) => (
-                <View key={step} style={styles.step}>
-                  <Text style={styles.chipText}>
-                    {position + 1}. {label(step)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
+          {stimulus.length ? (
+            trial.interaction === 'choose-next' ? (
+              <Text style={styles.sequence}>{stimulus.map(label).join('  ·  ')}  ·  ?</Text>
+            ) : (
+              <View style={styles.chips}>
+                {stimulus.map((step, position) => (
+                  <View key={step} style={styles.step}>
+                    <Text style={styles.chipText}>
+                      {trial.interaction === 'choose-shorter'
+                        ? step
+                        : `${position + 1}. ${label(step)}`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )
+          ) : null}
           <Text style={styles.hintLabel}>Your answer</Text>
           <View style={styles.chips}>
-            {(trial.interaction === 'choose-next'
-              ? trial.answerVocabulary
-              : recipeAsGiven
-            ).map((token) => (
+            {trial.answerVocabulary.map((token) => (
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: choice === token }}

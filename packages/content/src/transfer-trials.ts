@@ -34,7 +34,9 @@ export type TransferTrial = {
   /** The tokens a learner answers in. Never grid movement. */
   answerVocabulary: string[];
   /** How the answer is given, so the screen knows what to render. */
-  interaction: 'order' | 'choose-next' | 'find-fault';
+  interaction: 'order' | 'choose-next' | 'find-fault' | 'choose-shorter' | 'choose-reason';
+  /** The stimulus shown before the question, when there is one. */
+  given?: string[];
   solution: unknown;
 };
 
@@ -90,6 +92,114 @@ export const transferTrials: TransferTrial[] = [
     // "Too early" has exactly one.
     // The recipe as presented runs: crack, pour, heat, butter, serve.
     solution: 'pour-eggs',
+  },
+  {
+    id: 'domino-last',
+    title: 'Which domino falls last?',
+    eyebrow: 'Prediction, no board',
+    prompt:
+      'The dominoes are pushed from the red end. Red knocks blue, blue knocks green, green knocks yellow. Which one falls last?',
+    because:
+      'Each domino only moves once the one before it has. Running the chain forward in your head is the same move as tracing a plan before you start it.',
+    skillId: 'prediction',
+    dimension: 'transfer',
+    context: 'domino-chain',
+    given: ['red', 'blue', 'green', 'yellow'],
+    answerVocabulary: ['red', 'blue', 'green', 'yellow'],
+    interaction: 'choose-next',
+    solution: 'yellow',
+  },
+  {
+    id: 'counting-rule',
+    title: 'One number breaks the rule',
+    eyebrow: 'Debugging, no Byte',
+    prompt:
+      'Every number should be two more than the one before it. One number breaks the rule. Which one?',
+    because:
+      'You find it by checking each step against the rule, not by looking at the end. The last number being wrong does not mean the last number is the mistake.',
+    skillId: 'debugging',
+    dimension: 'transfer',
+    context: 'number-rule-fault',
+    given: ['2', '4', '6', '9', '11'],
+    answerVocabulary: ['2', '4', '6', '9', '11'],
+    interaction: 'find-fault',
+    solution: '9',
+  },
+  {
+    id: 'sandwich-steps',
+    title: 'Two ways to make lunch',
+    eyebrow: 'Fewer steps, no grid',
+    prompt:
+      'Both plans make the same sandwich. Which plan does it in fewer steps?',
+    because:
+      'Getting everything out once is shorter than fetching each thing separately. Doing the same job in fewer steps is worth noticing everywhere, not just on a board.',
+    skillId: 'efficiency',
+    dimension: 'transfer',
+    context: 'sandwich-plan',
+    given: [
+      'Plan A: get bread, get butter, get jam, spread butter, spread jam, close',
+      'Plan B: get bread, spread butter, put butter away, get jam, spread jam, put jam away, close',
+    ],
+    answerVocabulary: ['plan-a', 'plan-b'],
+    interaction: 'choose-shorter',
+    solution: 'plan-a',
+  },
+  {
+    id: 'tidy-route',
+    title: 'Tidying the room',
+    eyebrow: 'Fewer steps, no grid',
+    prompt:
+      'Both plans put every toy away. Which plan carries things fewer times?',
+    because:
+      'Collecting everything for one shelf before walking over beats one trip per toy. Grouping work that belongs together is the same idea as tightening a plan.',
+    skillId: 'efficiency',
+    dimension: 'transfer',
+    context: 'tidy-plan',
+    given: [
+      'Plan A: carry one toy to the shelf, come back, carry the next, come back, and so on',
+      'Plan B: gather every toy for the shelf, carry them together, then do the next shelf',
+    ],
+    answerVocabulary: ['plan-a', 'plan-b'],
+    interaction: 'choose-shorter',
+    solution: 'plan-b',
+  },
+  {
+    id: 'why-it-worked',
+    title: 'Why did it work?',
+    eyebrow: 'Explaining, no grid',
+    prompt:
+      'A friend watered the seed every day and it grew. Which sentence explains it best?',
+    because:
+      'A good explanation names the cause, not just the order things happened in. "It grew after I watered it" says when; "it grew because water reached the roots" says why.',
+    skillId: 'explanation',
+    dimension: 'transfer',
+    context: 'seed-explanation',
+    answerVocabulary: [
+      'it-grew-because-water-reached-the-roots',
+      'it-grew-after-i-watered-it',
+      'it-grew-because-i-waited',
+    ],
+    interaction: 'choose-reason',
+    solution: 'it-grew-because-water-reached-the-roots',
+  },
+  {
+    id: 'teach-a-friend',
+    title: 'Telling someone else',
+    eyebrow: 'Explaining, no grid',
+    prompt:
+      'You are telling a friend how to feed the cat, and you cannot show them. Which instruction is clearest?',
+    because:
+      'The clearest instruction says how much and where, because the person following it cannot see what you can. Explaining well means leaving nothing out that the other person needs.',
+    skillId: 'explanation',
+    dimension: 'transfer',
+    context: 'instruction-clarity',
+    answerVocabulary: [
+      'put-one-scoop-in-the-blue-bowl-by-the-door',
+      'feed-the-cat',
+      'give-her-the-usual',
+    ],
+    interaction: 'choose-reason',
+    solution: 'put-one-scoop-in-the-blue-bowl-by-the-door',
   },
 ];
 
