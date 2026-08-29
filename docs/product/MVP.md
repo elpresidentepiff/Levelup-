@@ -20,7 +20,7 @@ Every mission follows the same product rhythm:
 
 **Objective → Predict → Build → Run → Inspect → Fix → Explain → Create**
 
-The first release implements one world exceptionally narrowly: ten missions, one original build, one boss assessment, a deterministic learning engine and a parent mastery summary.
+The first release implements one world exceptionally narrowly: twelve missions, one original build, one boss assessment, a deterministic learning engine and a parent mastery summary.
 
 ## Deliberate exclusions
 

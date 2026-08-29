@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { LearnerProgress } from '../../../../packages/lesson-schema/src';
 import { worldOneMissions } from '../../../../packages/content/src/world-one';
+import { missionProgressionForWorld } from '../../../../packages/mastery/src';
 import { colours, radius, shadow, spacing } from '../theme';
 import { worlds } from '../worlds';
 
@@ -10,9 +11,18 @@ type Props = {
   progress: LearnerProgress;
   onBack: () => void;
   onOpenMission: (missionId: string) => void;
+  /** Absent until Castle Boss is beaten - see App. */
+  onOpenTransferTrials?: () => void;
 };
 
-export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
+export function WorldMapScreen({
+  progress,
+  onBack,
+  onOpenMission,
+  onOpenTransferTrials,
+}: Props) {
+  const missionProgression = missionProgressionForWorld(progress, worldOneMissions);
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -38,20 +48,23 @@ export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
 
         <View style={styles.missionGrid}>
           {worldOneMissions.map((mission, index) => {
-            const complete = progress.completedMissionIds.includes(mission.id);
-            const unlocked = index === 0 || progress.completedMissionIds.includes(worldOneMissions[index - 1].id);
-            const stars = progress.starsByMission[mission.id] ?? 0;
+            const progression = missionProgression[index];
+            const complete = progression.completed;
+            const unlocked = progression.playable;
+            const practiceRecommended = progression.access === 'practice_recommended';
+            const stars = progression.stars;
             return (
               <Pressable
                 key={mission.id}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: !unlocked }}
-                accessibilityLabel={`Mission ${mission.number}, ${mission.title}, ${complete ? `${stars} stars` : unlocked ? 'ready' : 'locked'}`}
+                accessibilityLabel={`Mission ${mission.number}, ${mission.title}, ${complete ? `${stars} stars` : practiceRecommended ? 'ready, practice recommended' : unlocked ? 'ready' : 'locked'}`}
                 disabled={!unlocked}
                 onPress={() => onOpenMission(mission.id)}
                 style={({ pressed }) => [
                   styles.mission,
                   complete && styles.missionComplete,
+                  practiceRecommended && styles.missionPractice,
                   !unlocked && styles.missionLocked,
                   pressed && styles.pressed,
                 ]}
@@ -64,11 +77,26 @@ export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
                 <Text style={styles.missionEyebrow}>{mission.eyebrow.toUpperCase()}</Text>
                 <Text style={styles.missionTitle}>{mission.title}</Text>
                 <Text style={styles.missionObjective} numberOfLines={2}>{mission.shortObjective}</Text>
-                <Text style={styles.stars}>{complete ? `${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}` : unlocked ? 'READY →' : '🔒 LOCKED'}</Text>
+                <Text style={styles.stars}>{complete ? `${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}` : practiceRecommended ? 'PRACTICE HELPS →' : unlocked ? 'READY →' : '🔒 LOCKED'}</Text>
               </Pressable>
             );
           })}
-        </View>
+        
+        {onOpenTransferTrials ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open the transfer trials: three challenges away from the grid"
+            onPress={onOpenTransferTrials}
+            style={styles.transferEntry}
+          >
+            <Text style={styles.transferEyebrow}>AWAY FROM THE GRID</Text>
+            <Text style={styles.transferTitle}>Three trials</Text>
+            <Text style={styles.transferBody}>
+              A rocket, a tune and a recipe. No board, no Byte — the same thinking somewhere new.
+            </Text>
+          </Pressable>
+        ) : null}
+</View>
 
         <Text style={styles.nextTitle}>Next worlds</Text>
         <View style={styles.nextList}>
@@ -89,6 +117,23 @@ export function WorldMapScreen({ progress, onBack, onOpenMission }: Props) {
 }
 
 const styles = StyleSheet.create({
+  transferEntry: {
+    backgroundColor: colours.surface,
+    borderColor: colours.purple,
+    borderRadius: 18,
+    borderWidth: 2,
+    gap: 6,
+    marginTop: 18,
+    padding: 18,
+  },
+  transferEyebrow: {
+    color: colours.purple,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+  },
+  transferTitle: { color: colours.ink, fontSize: 20, fontWeight: '900' },
+  transferBody: { color: colours.muted, fontSize: 14, lineHeight: 20 },
   safe: { flex: 1, backgroundColor: colours.background },
   content: { width: '100%', maxWidth: 920, alignSelf: 'center', paddingHorizontal: spacing.md, paddingBottom: 50 },
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8, marginBottom: 20 },
@@ -108,6 +153,7 @@ const styles = StyleSheet.create({
   missionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
   mission: { width: '48%', flexGrow: 1, minWidth: 155, minHeight: 182, backgroundColor: colours.surface, borderRadius: radius.md, borderWidth: 2, borderColor: colours.border, padding: 14, ...shadow, shadowOpacity: 0.06 },
   missionComplete: { borderColor: '#8CD8C1', backgroundColor: '#F4FFFB' },
+  missionPractice: { borderColor: '#E4C66E', backgroundColor: '#FFFBEF' },
   missionLocked: { opacity: 0.52, backgroundColor: '#F1EFF7' },
   missionNumber: { width: 34, height: 34, borderRadius: 12, backgroundColor: colours.lilac, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   missionNumberComplete: { backgroundColor: '#CCF4E6' },
@@ -127,4 +173,3 @@ const styles = StyleSheet.create({
   lock: { fontSize: 13 },
   pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
 });
-

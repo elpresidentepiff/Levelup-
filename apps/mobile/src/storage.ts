@@ -4,7 +4,10 @@ import type {
   LearnerProfile,
   LearnerProgress,
 } from '../../../packages/lesson-schema/src';
-import { createInitialProgress } from '../../../packages/mastery/src';
+import {
+  createInitialProgress,
+  hydrateProgress,
+} from '../../../packages/mastery/src';
 
 const PROFILE_KEY = '@level/profile/v2';
 const PROGRESS_KEY = '@level/progress/v2';
@@ -23,7 +26,7 @@ export const loadStoredState = async (): Promise<StoredState> => {
     return {
       profile: profileJson ? JSON.parse(profileJson) : undefined,
       progress: progressJson
-        ? { ...createInitialProgress(), ...JSON.parse(progressJson) }
+        ? hydrateProgress(JSON.parse(progressJson))
         : createInitialProgress(),
     };
   } catch {
