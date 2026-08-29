@@ -6,6 +6,7 @@ import type {
   PredictionOption,
 } from '../../../../packages/lesson-schema/src';
 import { pointKey } from '../../../../packages/learning-engine/src';
+import type { ThemeSkin } from '../../../../packages/content/src/themes';
 import { colours, radius, shadow } from '../theme';
 
 type Props = {
@@ -14,9 +15,11 @@ type Props = {
   trail: Point[];
   predictionOptions?: PredictionOption[];
   size: number;
+  /** Presentation only. The canvas draws the theme; it never reports it. */
+  skin: ThemeSkin;
 };
 
-export function MissionCanvas({ board, position, trail, predictionOptions, size }: Props) {
+export function MissionCanvas({ board, position, trail, predictionOptions, size, skin }: Props) {
   const cell = size / board.columns;
   const collected = new Set(trail.map(pointKey));
   const place = (point: Point) => ({
@@ -27,7 +30,7 @@ export function MissionCanvas({ board, position, trail, predictionOptions, size 
   });
 
   return (
-    <View style={[styles.shell, { width: size, height: size }]}>
+    <View style={[styles.shell, { width: size, height: size, backgroundColor: skin.surface }]}>
       {Array.from({ length: board.rows }).flatMap((_, row) =>
         Array.from({ length: board.columns }).map((__, column) => (
           <View

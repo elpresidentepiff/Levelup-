@@ -68,6 +68,80 @@ export type ExplanationOption = {
   correct?: boolean;
 };
 
+/**
+ * The game fantasy a mission is dressed in.
+ *
+ * A theme supplies nouns, palette and sprites. It never reaches the evidence
+ * model: the ledger records that a child sequenced, not that they sequenced
+ * a rocket. Two missions with the same task and different themes make the same
+ * claim about a child, which is exactly what lets them count as separate
+ * contexts - the same thinking, shown somewhere genuinely else.
+ */
+export type GameTheme =
+  | 'maze'
+  | 'treasure'
+  | 'rocket'
+  | 'factory'
+  | 'kitchen'
+  | 'music'
+  | 'traffic'
+  | 'castle'
+  | 'workshop';
+
+/**
+ * What the child actually does, independent of what it looks like.
+ *
+ * This is the invariant a renderer may not change. A rocket checklist and a
+ * pizza order are one template with different nouns; a maze and a rocket
+ * checklist are two templates, because ordering steps and steering a body
+ * through space are different acts even when they evidence the same skill.
+ */
+export type TaskKind =
+  | 'run-program'
+  | 'order-steps'
+  | 'predict-outcome'
+  | 'repair-order'
+  | 'choose-plan'
+  | 'explain-cause'
+  | 'author';
+
+/** A step in any non-spatial ordering task. */
+export type TaskStep = {
+  id: string;
+  label: string;
+};
+
+/**
+ * Steering a body through space by assembling a program: mazes, treasure
+ * runs, robot arms, the castle. The board is the payload of this task, not a
+ * property of every mission.
+ */
+export type RunProgramTask = {
+  kind: 'run-program';
+  board: BoardDefinition;
+  allowedCommands: Direction[];
+  initialProgram?: Direction[];
+  maxCommands?: number;
+};
+
+/**
+ * Putting steps into a working order with no board and no movement: launch
+ * checklists, recipes, assembly lines.
+ */
+export type OrderStepsTask = {
+  kind: 'order-steps';
+  steps: TaskStep[];
+  solution: string[];
+  /**
+   * A broken order to start from, for repair tasks. Absent means the child
+   * assembles from nothing. This is the same distinction the spatial renderer
+   * draws between building a route and fixing one.
+   */
+  initialOrder?: string[];
+};
+
+export type TaskDefinition = RunProgramTask | OrderStepsTask;
+
 export type MissionDefinition = {
   id: string;
   number: number;
@@ -77,11 +151,19 @@ export type MissionDefinition = {
   shortObjective: string;
   celebration: string;
   mode: MissionMode;
-  board: BoardDefinition;
+  /** The game fantasy. Presentation only - never reaches an EvidenceEvent. */
+  theme: GameTheme;
+  /**
+   * What the child does, and the payload that interaction needs. A board is a
+   * property of steering a body through space, not of every mission, so it
+   * lives here rather than on the mission itself.
+   */
+  task: TaskDefinition;
   skills: SkillId[];
-  allowedCommands: Direction[];
-  initialProgram?: Direction[];
-  maxCommands?: number;
+  /**
+   * How short the ideal answer is. A learning property, not an interaction
+   * one - a checklist has an optimal length as surely as a route does.
+   */
   optimalProgramLength: number;
   evidence: MissionEvidenceDefinition[];
   hints: string[];

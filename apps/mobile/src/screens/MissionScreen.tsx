@@ -3,6 +3,7 @@ import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
+  SafeAreaView as RNSafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,20 +18,14 @@ import type {
   EvidenceEvent,
   LearnerProfile,
   MissionDefinition,
-  Point,
 } from '../../../../packages/lesson-schema/src';
-import {
-  classifyMisconception,
-  evaluateMission,
-  samePoint,
-} from '../../../../packages/learning-engine/src';
 import { createMissionEvidenceEvents } from '../../../../packages/mastery/src';
+import { themeSkin } from '../../../../packages/content/src/themes';
 import { worldOneMissions } from '../../../../packages/content/src/world-one';
 import { reviewedHintAction } from '../../../../packages/tutor-contracts/src';
 import { ActionButton } from '../components/Buttons';
 import { ByteAvatar } from '../components/ByteAvatar';
-import { CommandComposer } from '../components/CommandComposer';
-import { MissionCanvas } from '../components/MissionCanvas';
+import { rendererFor, type TaskAttempt } from '../tasks';
 import { colours, radius, shadow, spacing } from '../theme';
 
 export type CompletionEvidence = {
@@ -48,9 +43,17 @@ type Props = {
   onContinue: () => void;
 };
 
-const delay = (milliseconds: number) =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
-
+/**
+ * The learning shell. It owns everything that is true of a mission whatever
+ * game it is dressed as: attempts, hints, timing, evidence, the explanation
+ * step, passing and continuing.
+ *
+ * It does not own the interaction. Which renderer draws the task is looked up
+ * from the task kind, and this file never learns whether the child just
+ * steered a robot or ordered a launch checklist. Keeping that ignorance is the
+ * point - it is what makes two themes of one task comparable evidence rather
+ * than two different claims.
+ */
 export function MissionScreen({
   mission,
   profile,
@@ -61,47 +64,38 @@ export function MissionScreen({
 }: Props) {
   const { width } = useWindowDimensions();
   const wide = width >= 780;
-  const canvasSize = wide
-    ? Math.min(420, width * 0.46)
-    : Math.min(420, width - spacing.md * 2);
-  const [program, setProgram] = useState<Direction[]>(mission.initialProgram ?? []);
-  const [position, setPosition] = useState<Point>(mission.board.start);
-  const [trail, setTrail] = useState<Point[]>([mission.board.start]);
-  const [running, setRunning] = useState(false);
+  const skin = themeSkin(mission.theme);
+
   const [attempts, setAttempts] = useState(0);
+  const [busy, setBusy] = useState(false);
   const [hintLevel, setHintLevel] = useState(0);
   const [activeHint, setActiveHint] = useState<string>();
-  const [predictionId, setPredictionId] = useState<string>();
   const [awaitingExplanation, setAwaitingExplanation] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'try'; message: string }>();
   const [passed, setPassed] = useState(false);
   const [passedMissionId, setPassedMissionId] = useState<string>();
-  const [debugActions, setDebugActions] = useState(0);
+  const [lastProgram, setLastProgram] = useState<Direction[]>([]);
   const reported = useRef(false);
   const attemptStartedAt = useRef(Date.now());
   const eventSequence = useRef(0);
-  const lastRunDebugActions = useRef(0);
-  const lastRunTimeToSolutionMs = useRef(0);
+  const lastAttempt = useRef<TaskAttempt | undefined>(undefined);
+  const lastTimeToSolutionMs = useRef(0);
 
   useEffect(() => {
-    setProgram(mission.initialProgram ?? []);
-    setPosition(mission.board.start);
-    setTrail([mission.board.start]);
-    setRunning(false);
     setAttempts(0);
+    setBusy(false);
     setHintLevel(0);
     setActiveHint(undefined);
-    setPredictionId(undefined);
     setAwaitingExplanation(false);
     setFeedback(undefined);
     setPassed(false);
     setPassedMissionId(undefined);
-    setDebugActions(0);
+    setLastProgram([]);
     reported.current = false;
     attemptStartedAt.current = Date.now();
     eventSequence.current = 0;
-    lastRunDebugActions.current = 0;
-    lastRunTimeToSolutionMs.current = 0;
+    lastAttempt.current = undefined;
+    lastTimeToSolutionMs.current = 0;
   }, [mission]);
 
   useEffect(() => {
@@ -110,31 +104,11 @@ export function MissionScreen({
     onComplete({
       hintsUsed: hintLevel,
       attempts: Math.max(1, attempts),
-      program,
+      program: lastProgram,
     });
-  }, [attempts, hintLevel, mission.id, onComplete, passed, passedMissionId, program]);
+  }, [attempts, hintLevel, lastProgram, mission.id, onComplete, passed, passedMissionId]);
 
   const objective = profile.ageMode === 'explorer' ? mission.shortObjective : mission.objective;
-  const lockedProgram = mission.mode === 'predict';
-  const canRun =
-    !running &&
-    program.length > 0 &&
-    (!lockedProgram || predictionId !== undefined) &&
-    !passed;
-
-  const resetBoard = () => {
-    setPosition(mission.board.start);
-    setTrail([mission.board.start]);
-    setFeedback(undefined);
-    setAwaitingExplanation(false);
-  };
-
-  const clearProgram = () => {
-    if (lockedProgram) return;
-    resetBoard();
-    setProgram([]);
-    setDebugActions((current) => current + 1);
-  };
 
   const emitEvidence = (
     successByDimension: Partial<Record<EvidenceDimension, boolean>>,
@@ -144,7 +118,8 @@ export function MissionScreen({
       predictionCorrect?: boolean;
       explanationResult?: EvidenceEvent['explanationResult'];
       misconception?: EvidenceEvent['misconception'];
-      debugActionCount?: number;
+      programLength: number;
+      debugActions: number;
     },
   ) => {
     const timestamp = new Date().toISOString();
@@ -155,10 +130,9 @@ export function MissionScreen({
       attemptNumber: input.attemptNumber,
       hintsUsed: hintLevel,
       timeToSolutionMs: input.timeToSolutionMs,
-      predictionBeforeRun: predictionId,
       predictionCorrect: input.predictionCorrect,
-      programLength: program.length,
-      debugActions: input.debugActionCount ?? debugActions,
+      programLength: input.programLength,
+      debugActions: input.debugActions,
       explanationResult: input.explanationResult,
       misconception: input.misconception,
       timestamp,
@@ -166,82 +140,38 @@ export function MissionScreen({
     if (events.length > 0) onEvidence(events);
   };
 
-  const run = async () => {
-    if (!canRun) return;
+  const completeMission = () => {
+    setPassedMissionId(mission.id);
+    setPassed(true);
+    setFeedback({ type: 'success', message: mission.celebration });
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  /** Whatever the renderer was, the response to an attempt is the same. */
+  const handleAttempt = (attempt: TaskAttempt) => {
     const attemptNumber = attempts + 1;
     setAttempts(attemptNumber);
-    setRunning(true);
-    setFeedback(undefined);
-    setAwaitingExplanation(false);
-    setPosition(mission.board.start);
-    setTrail([mission.board.start]);
+    setBusy(false);
+    lastAttempt.current = attempt;
+    if (attempt.program) setLastProgram(attempt.program);
 
-    const evaluation = evaluateMission(mission, program);
-    const chosenPrediction = mission.predictionOptions?.find(
-      (option) => option.id === predictionId,
-    );
-    const predictionCorrect = mission.mode === 'predict'
-      ? Boolean(
-          chosenPrediction &&
-          samePoint(chosenPrediction.point, evaluation.execution.finalPosition),
-        )
-      : undefined;
-    const missionPassed = evaluation.passed && predictionCorrect !== false;
-    const misconception = classifyMisconception(mission, evaluation, {
-      predictionCorrect,
-      attemptNumber,
-    });
-    const successByDimension: Partial<Record<EvidenceDimension, boolean>> = {};
-    for (const definition of mission.evidence) {
-      if (definition.dimension === 'explain') continue;
-      successByDimension[definition.dimension] =
-        definition.dimension === 'predict'
-          ? predictionCorrect ?? evaluation.passed
-          : evaluation.passed;
-    }
     const timeToSolutionMs = Date.now() - attemptStartedAt.current;
-    lastRunTimeToSolutionMs.current = timeToSolutionMs;
-    lastRunDebugActions.current = debugActions;
-    emitEvidence(successByDimension, {
+    lastTimeToSolutionMs.current = timeToSolutionMs;
+    emitEvidence(attempt.successByDimension, {
       attemptNumber,
       timeToSolutionMs,
-      predictionCorrect,
-      misconception,
+      predictionCorrect: attempt.predictionCorrect,
+      misconception: attempt.misconception,
+      programLength: attempt.programLength,
+      debugActions: attempt.debugActions,
     });
     attemptStartedAt.current = Date.now();
-    setDebugActions(0);
-    const animatedTrail: Point[] = [mission.board.start];
-    for (const nextPosition of evaluation.execution.trail.slice(1)) {
-      await delay(profile.ageMode === 'explorer' ? 380 : 270);
-      animatedTrail.push(nextPosition);
-      setPosition(nextPosition);
-      setTrail([...animatedTrail]);
-      void Haptics.selectionAsync();
-    }
 
-    setRunning(false);
-    if (mission.mode === 'predict') {
-      if (!predictionCorrect) {
-        setFeedback({
-          type: 'try',
-          message: 'Good test. Trace one arrow at a time and notice where Byte actually stopped.',
-        });
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        return;
-      }
-    }
-
-    if (!evaluation.checks.withinCommandLimit) {
+    if (!attempt.passed) {
       setFeedback({
         type: 'try',
-        message: `Your route works, but it uses ${program.length} steps. Can you keep the result and remove the extra movement?`,
+        message: attempt.failureMessage ?? 'Not quite yet. Try another order.',
       });
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      return;
-    }
-
-    if (!missionPassed) {
-      setFeedback({ type: 'try', message: evaluation.execution.reason });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
@@ -253,19 +183,12 @@ export function MissionScreen({
         message:
           mission.mode === 'debug'
             ? 'You fixed it. One more step: say what was wrong.'
-            : 'Your route works. One more step: explain why.',
+            : `Your ${skin.program} works. One more step: explain why.`,
       });
       return;
     }
 
     completeMission();
-  };
-
-  const completeMission = () => {
-    setPassedMissionId(mission.id);
-    setPassed(true);
-    setFeedback({ type: 'success', message: mission.celebration });
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const answerExplanation = (optionId: string) => {
@@ -275,9 +198,10 @@ export function MissionScreen({
       { explain: correct },
       {
         attemptNumber: Math.max(1, attempts),
-        timeToSolutionMs: lastRunTimeToSolutionMs.current,
+        timeToSolutionMs: lastTimeToSolutionMs.current,
         explanationResult: correct ? 'correct' : 'incorrect',
-        debugActionCount: lastRunDebugActions.current,
+        programLength: lastAttempt.current?.programLength ?? 0,
+        debugActions: lastAttempt.current?.debugActions ?? 0,
       },
     );
     attemptStartedAt.current = Date.now();
@@ -288,7 +212,7 @@ export function MissionScreen({
     }
     setFeedback({
       type: 'try',
-      message: 'That would not make the route reliable. Think about how Byte follows each tile.',
+      message: `That would not make the ${skin.program} reliable. Think about how each step depends on the one before.`,
     });
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   };
@@ -300,6 +224,8 @@ export function MissionScreen({
     setActiveHint(action.hint);
     void Haptics.selectionAsync();
   };
+
+  const Renderer = rendererFor(mission.task?.kind ?? 'run-program');
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -333,7 +259,7 @@ export function MissionScreen({
         <View style={styles.objectiveCard}>
           <ByteAvatar size={74} mood={passed ? 'celebrate' : activeHint ? 'thinking' : 'happy'} />
           <View style={styles.objectiveCopy}>
-            <Text style={styles.eyebrow}>{mission.eyebrow.toUpperCase()}</Text>
+            <Text style={styles.eyebrow}>{skin.label.toUpperCase()} · {mission.eyebrow.toUpperCase()}</Text>
             <Text style={styles.title}>{mission.title}</Text>
             <Text style={styles.objective}>{objective}</Text>
             <Pressable
@@ -346,140 +272,104 @@ export function MissionScreen({
           </View>
         </View>
 
-        <View style={[styles.workArea, wide && styles.workAreaWide]}>
-          <View style={styles.canvasColumn}>
-            <MissionCanvas
-              board={mission.board}
-              position={position}
-              trail={trail}
-              predictionOptions={mission.predictionOptions}
-              size={canvasSize}
-            />
-            <View style={styles.legend}>
-              <Text style={styles.legendText}>🤖 Byte</Text>
-              <Text style={styles.legendText}>● Portal</Text>
-              {mission.board.gems.length > 0 ? <Text style={styles.legendText}>🟡 Energy</Text> : null}
-            </View>
-          </View>
-
-          <View style={[styles.controlsCard, wide && styles.controlsWide]}>
-            {mission.mode === 'predict' ? (
-              <View style={styles.predictionBlock}>
-                <Text style={styles.controlTitle}>Choose before Run</Text>
-                <View style={styles.optionRow}>
-                  {mission.predictionOptions?.map((option) => {
-                    const selected = predictionId === option.id;
-                    return (
-                      <Pressable
-                        key={option.id}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected }}
-                        onPress={() => setPredictionId(option.id)}
-                        style={({ pressed }) => [
-                          styles.predictionOption,
-                          selected && styles.predictionSelected,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <Text style={[styles.predictionText, selected && styles.predictionTextSelected]}>
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-
-            <CommandComposer
-              program={program}
-              allowedCommands={mission.allowedCommands}
-              locked={lockedProgram || running || passed}
-              maxCommands={mission.maxCommands}
-              onChange={(nextProgram) => {
-                resetBoard();
-                setProgram(nextProgram);
-                setDebugActions((current) => current + 1);
+        <View style={styles.taskSlot}>
+          {Renderer ? (
+            <Renderer
+              mission={mission}
+              skin={skin}
+              ageMode={profile.ageMode}
+              locked={passed}
+              busy={busy}
+              onAttemptStart={() => {
+                setBusy(true);
+                setFeedback(undefined);
+                setAwaitingExplanation(false);
               }}
+              onAttempt={handleAttempt}
+              wide={wide}
+              width={width}
             />
+          ) : (
+            <Text style={styles.objective}>This mission type is not playable yet.</Text>
+          )}
+        </View>
 
-            <View style={styles.actionRow}>
-              <ActionButton
-                label={running ? 'Running…' : 'Run'}
-                onPress={() => void run()}
-                disabled={!canRun}
-                style={styles.runButton}
-              />
-              {!lockedProgram && !passed ? (
-                <ActionButton label="Clear" onPress={clearProgram} variant="secondary" style={styles.clearButton} />
-              ) : (
-                <ActionButton label="Reset" onPress={resetBoard} variant="secondary" style={styles.clearButton} />
-              )}
-            </View>
-
-            {mission.hints.length > 0 && !passed ? (
-              <View style={styles.hintArea}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={hintLevel >= mission.hints.length}
-                  onPress={showNextHint}
-                  style={({ pressed }) => [styles.hintButton, pressed && styles.pressed]}
-                >
-                  <Text style={styles.hintButtonText}>
-                    {hintLevel === 0 ? '💡 I need a hint' : hintLevel < mission.hints.length ? '💡 Another hint' : 'All hints shown'}
-                  </Text>
-                </Pressable>
-                {activeHint ? (
-                  <View style={styles.hintBubble}>
-                    <Text style={styles.hintLevel}>BYTE HINT {hintLevel}</Text>
-                    <Text style={styles.hintText}>{activeHint}</Text>
-                  </View>
-                ) : null}
-              </View>
-            ) : mission.mode === 'boss' && !passed ? (
-              <View style={styles.bossNotice}>
-                <Text style={styles.bossNoticeText}>🏆 Boss missions start without hints. Test your own plan.</Text>
-              </View>
-            ) : null}
-
-            {awaitingExplanation ? (
-              <View style={styles.explanationCard}>
-                <Text style={styles.controlTitle}>{mission.explanationPrompt}</Text>
-                {mission.explanationOptions?.map((option) => (
-                  <Pressable
-                    key={option.id}
-                    accessibilityRole="button"
-                    onPress={() => answerExplanation(option.id)}
-                    style={({ pressed }) => [styles.explanationOption, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.explanationText}>{option.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-
-            {feedback ? (
-              <View style={[styles.feedback, feedback.type === 'success' ? styles.feedbackSuccess : styles.feedbackTry]}>
-                <Text style={styles.feedbackIcon}>{feedback.type === 'success' ? '✓' : '↻'}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.feedbackTitle}>{feedback.type === 'success' ? 'It works!' : 'Try one change'}</Text>
-                  <Text style={styles.feedbackMessage}>{feedback.message}</Text>
+        <View style={styles.afterTask}>
+          {mission.hints.length > 0 && !passed ? (
+            <View style={styles.hintArea}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={hintLevel >= mission.hints.length}
+                onPress={showNextHint}
+                style={({ pressed }) => [styles.hintButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.hintButtonText}>
+                  {hintLevel === 0
+                    ? '💡 I need a hint'
+                    : hintLevel < mission.hints.length
+                      ? '💡 Another hint'
+                      : 'All hints shown'}
+                </Text>
+              </Pressable>
+              {activeHint ? (
+                <View style={styles.hintBubble}>
+                  <Text style={styles.hintLevel}>BYTE HINT {hintLevel}</Text>
+                  <Text style={styles.hintText}>{activeHint}</Text>
                 </View>
-              </View>
-            ) : null}
+              ) : null}
+            </View>
+          ) : mission.mode === 'boss' && !passed ? (
+            <View style={styles.bossNotice}>
+              <Text style={styles.bossNoticeText}>
+                🏆 Boss missions start without hints. Test your own plan.
+              </Text>
+            </View>
+          ) : null}
 
-            {passed ? (
-              <ActionButton
-                label={
-                  mission.number === worldOneMissions.length
-                    ? 'See what you learned'
-                    : 'Next mission'
-                }
-                onPress={onContinue}
-                style={styles.continueButton}
-              />
-            ) : null}
-          </View>
+          {awaitingExplanation ? (
+            <View style={styles.explanationCard}>
+              <Text style={styles.controlTitle}>{mission.explanationPrompt}</Text>
+              {mission.explanationOptions?.map((option) => (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="button"
+                  onPress={() => answerExplanation(option.id)}
+                  style={({ pressed }) => [styles.explanationOption, pressed && styles.pressed]}
+                >
+                  <Text style={styles.explanationText}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          {feedback ? (
+            <View
+              style={[
+                styles.feedback,
+                feedback.type === 'success' ? styles.feedbackSuccess : styles.feedbackTry,
+              ]}
+            >
+              <Text style={styles.feedbackIcon}>{feedback.type === 'success' ? '★' : '↻'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.feedbackTitle}>
+                  {feedback.type === 'success' ? 'Nice work' : 'Keep going'}
+                </Text>
+                <Text style={styles.feedbackMessage}>{feedback.message}</Text>
+              </View>
+            </View>
+          ) : null}
+
+          {passed ? (
+            <ActionButton
+              label={
+                mission.number === worldOneMissions.length
+                  ? 'See what you learned'
+                  : 'Next mission'
+              }
+              onPress={onContinue}
+              style={styles.continueButton}
+            />
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -505,23 +395,9 @@ const styles = StyleSheet.create({
   objective: { color: colours.muted, fontSize: 14, lineHeight: 20, marginTop: 4 },
   readButton: { alignSelf: 'flex-start', minHeight: 34, justifyContent: 'center', marginTop: 5 },
   readButtonText: { color: colours.purpleDark, fontSize: 12, fontWeight: '900' },
-  workArea: { gap: 16, marginTop: 16 },
-  workAreaWide: { flexDirection: 'row', alignItems: 'flex-start' },
-  canvasColumn: { alignItems: 'center' },
-  legend: { flexDirection: 'row', gap: 14, marginTop: 9 },
-  legendText: { color: colours.muted, fontSize: 11, fontWeight: '700' },
-  controlsCard: { backgroundColor: colours.surface, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: '#ECE8F8', gap: 14, ...shadow, shadowOpacity: 0.08 },
-  controlsWide: { flex: 1, minWidth: 340 },
-  predictionBlock: { gap: 8 },
+  taskSlot: { marginTop: 16 },
+  afterTask: { gap: 14, marginTop: 16 },
   controlTitle: { color: colours.ink, fontSize: 16, fontWeight: '900' },
-  optionRow: { flexDirection: 'row', gap: 8 },
-  predictionOption: { flex: 1, minHeight: 46, borderRadius: radius.sm, borderWidth: 2, borderColor: colours.border, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAF9FF' },
-  predictionSelected: { backgroundColor: colours.purple, borderColor: colours.purpleDark },
-  predictionText: { color: colours.ink, fontSize: 12, fontWeight: '900' },
-  predictionTextSelected: { color: colours.surface },
-  actionRow: { flexDirection: 'row', gap: 9 },
-  runButton: { flex: 1 },
-  clearButton: { minWidth: 100 },
   hintArea: { gap: 8 },
   hintButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center' },
   hintButtonText: { color: colours.purpleDark, fontSize: 14, fontWeight: '900' },

@@ -1,4 +1,5 @@
 import type {
+  RunProgramTask,
   MissionDefinition,
   SkillId,
   WorldSkillOutcome,
@@ -16,17 +17,21 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Help Byte reach the glow.',
     celebration: 'You made a machine follow your instructions!',
     mode: 'construct',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 3 },
-      goal: { x: 2, y: 2 },
-      walls: [],
-      gems: [],
+    theme: 'maze',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 3 },
+        goal: { x: 2, y: 2 },
+        walls: [],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 5,
     },
     skills: ['sequence'],
-    allowedCommands: [...allDirections],
-    maxCommands: 5,
     optimalProgramLength: 3,
     evidence: [
       { skillId: 'sequence', dimension: 'apply', context: 'grid-basic-route' },
@@ -46,23 +51,27 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Collect 2 gems, then finish.',
     celebration: 'Every step happened in exactly the order you chose.',
     mode: 'construct',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 4 },
-      goal: { x: 4, y: 2 },
-      walls: [
-        { x: 1, y: 3 },
-        { x: 2, y: 3 },
-      ],
-      gems: [
-        { x: 2, y: 4 },
-        { x: 4, y: 3 },
-      ],
+    theme: 'treasure',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 4 },
+        goal: { x: 4, y: 2 },
+        walls: [
+          { x: 1, y: 3 },
+          { x: 2, y: 3 },
+        ],
+        gems: [
+          { x: 2, y: 4 },
+          { x: 4, y: 3 },
+        ],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 8,
     },
     skills: ['sequence'],
-    allowedCommands: [...allDirections],
-    maxCommands: 8,
     optimalProgramLength: 6,
     evidence: [
       { skillId: 'sequence', dimension: 'apply', context: 'grid-ordered-collection' },
@@ -82,17 +91,21 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Where will Byte finish?',
     celebration: 'You ran the instructions inside your head first.',
     mode: 'predict',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 1, y: 3 },
-      goal: { x: 3, y: 2 },
-      walls: [],
-      gems: [],
+    theme: 'traffic',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 1, y: 3 },
+        goal: { x: 3, y: 2 },
+        walls: [],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      initialProgram: ['right', 'right', 'up'],
     },
     skills: ['prediction', 'sequence'],
-    allowedCommands: [...allDirections],
-    initialProgram: ['right', 'right', 'up'],
     optimalProgramLength: 3,
     evidence: [
       { skillId: 'prediction', dimension: 'predict', context: 'grid-fixed-program' },
@@ -118,18 +131,22 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Fix the broken route.',
     celebration: 'You found and fixed a bug instead of starting over.',
     mode: 'debug',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 3 },
-      goal: { x: 3, y: 2 },
-      walls: [{ x: 2, y: 3 }],
-      gems: [],
+    theme: 'factory',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 3 },
+        goal: { x: 3, y: 2 },
+        walls: [{ x: 2, y: 3 }],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      initialProgram: ['right', 'right', 'up', 'right'],
+      maxCommands: 6,
     },
     skills: ['debugging', 'sequence'],
-    allowedCommands: [...allDirections],
-    initialProgram: ['right', 'right', 'up', 'right'],
-    maxCommands: 6,
     optimalProgramLength: 4,
     evidence: [
       { skillId: 'debugging', dimension: 'debug', context: 'grid-obstacle-repair' },
@@ -167,21 +184,25 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Find any safe route.',
     celebration: 'Your solution is different and still correct.',
     mode: 'construct',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 4 },
-      goal: { x: 4, y: 0 },
-      walls: [
-        { x: 1, y: 3 },
-        { x: 2, y: 2 },
-        { x: 3, y: 1 },
-      ],
-      gems: [],
+    theme: 'maze',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 4 },
+        goal: { x: 4, y: 0 },
+        walls: [
+          { x: 1, y: 3 },
+          { x: 2, y: 2 },
+          { x: 3, y: 1 },
+        ],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 10,
     },
     skills: ['sequence', 'creative_application'],
-    allowedCommands: [...allDirections],
-    maxCommands: 10,
     optimalProgramLength: 8,
     evidence: [
       { skillId: 'sequence', dimension: 'apply', context: 'grid-multiple-solutions' },
@@ -202,17 +223,21 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Use 6 steps or fewer.',
     celebration: 'You removed extra movement without changing the result.',
     mode: 'construct',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 2 },
-      goal: { x: 4, y: 2 },
-      walls: [{ x: 1, y: 2 }],
-      gems: [],
+    theme: 'treasure',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 2 },
+        goal: { x: 4, y: 2 },
+        walls: [{ x: 1, y: 2 }],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 6,
     },
     skills: ['efficiency', 'sequence'],
-    allowedCommands: [...allDirections],
-    maxCommands: 6,
     optimalProgramLength: 6,
     evidence: [
       { skillId: 'efficiency', dimension: 'apply', context: 'grid-command-limit' },
@@ -247,20 +272,24 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Build it. Then explain it.',
     celebration: 'Explaining your idea made your thinking visible.',
     mode: 'explain',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 4 },
-      goal: { x: 3, y: 1 },
-      walls: [{ x: 1, y: 3 }],
-      gems: [
-        { x: 1, y: 4 },
-        { x: 3, y: 2 },
-      ],
+    theme: 'maze',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 4 },
+        goal: { x: 3, y: 1 },
+        walls: [{ x: 1, y: 3 }],
+        gems: [
+          { x: 1, y: 4 },
+          { x: 3, y: 2 },
+        ],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 8,
     },
     skills: ['explanation', 'sequence'],
-    allowedCommands: [...allDirections],
-    maxCommands: 8,
     optimalProgramLength: 6,
     evidence: [
       { skillId: 'explanation', dimension: 'explain', context: 'grid-route-explanation' },
@@ -291,18 +320,22 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Find the changed tile.',
     celebration: 'Bug Hunter unlocked: you checked the result, found the cause, and fixed it.',
     mode: 'debug',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 2 },
-      goal: { x: 4, y: 0 },
-      walls: [],
-      gems: [],
+    theme: 'factory',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 2 },
+        goal: { x: 4, y: 0 },
+        walls: [],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      initialProgram: ['right', 'right', 'up', 'down', 'right', 'right'],
+      maxCommands: 6,
     },
     skills: ['debugging', 'prediction'],
-    allowedCommands: [...allDirections],
-    initialProgram: ['right', 'right', 'up', 'down', 'right', 'right'],
-    maxCommands: 6,
     optimalProgramLength: 6,
     evidence: [
       { skillId: 'debugging', dimension: 'debug', context: 'grid-changed-instruction' },
@@ -337,20 +370,24 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Create and save your route.',
     celebration: 'Your first original build is saved on this device.',
     mode: 'create',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 4 },
-      goal: { x: 4, y: 0 },
-      walls: [
-        { x: 2, y: 1 },
-        { x: 2, y: 2 },
-        { x: 2, y: 3 },
-      ],
-      gems: [],
+    theme: 'maze',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 4 },
+        goal: { x: 4, y: 0 },
+        walls: [
+          { x: 2, y: 1 },
+          { x: 2, y: 2 },
+          { x: 2, y: 3 },
+        ],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
     },
     skills: ['creative_application', 'sequence'],
-    allowedCommands: [...allDirections],
     optimalProgramLength: 8,
     evidence: [
       { skillId: 'creative_application', dimension: 'apply', context: 'grid-open-route' },
@@ -372,24 +409,28 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Find the shorter way round.',
     celebration: 'You picked the cheaper route and can say why it was cheaper.',
     mode: 'construct',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 3 },
-      goal: { x: 4, y: 3 },
-      // A wall with a gap at each end. Over the top costs ten instructions,
-      // under the bottom costs six, so the budget is the whole lesson: both
-      // routes work, and the child has to notice that working is not enough.
-      walls: [
-        { x: 2, y: 1 },
-        { x: 2, y: 2 },
-        { x: 2, y: 3 },
-      ],
-      gems: [],
+    theme: 'treasure',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 3 },
+        goal: { x: 4, y: 3 },
+        // A wall with a gap at each end. Over the top costs ten instructions,
+        // under the bottom costs six, so the budget is the whole lesson: both
+        // routes work, and the child has to notice that working is not enough.
+        walls: [
+          { x: 2, y: 1 },
+          { x: 2, y: 2 },
+          { x: 2, y: 3 },
+        ],
+        gems: [],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 6,
     },
     skills: ['efficiency', 'sequence'],
-    allowedCommands: [...allDirections],
-    maxCommands: 6,
     optimalProgramLength: 6,
     evidence: [
       { skillId: 'efficiency', dimension: 'apply', context: 'grid-detour-cost' },
@@ -420,51 +461,53 @@ export const worldOneMissions: MissionDefinition[] = [
     title: 'Out of Order',
     eyebrow: 'Right steps, wrong order',
     objective:
-      'Every instruction Byte needs is already here. They are in the wrong order. Rearrange them.',
-    shortObjective: 'Same four steps. Better order.',
-    celebration: 'You fixed the order without changing a single instruction.',
+      'Every step for this pizza is already here. They are in the wrong order. Fix it.',
+    shortObjective: 'Same five steps. Better order.',
+    celebration: 'You fixed the order without changing a single step.',
     mode: 'debug',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 4 },
-      goal: { x: 2, y: 2 },
-      walls: [{ x: 0, y: 3 }],
-      gems: [],
+    theme: 'kitchen',
+    // The one mission in World 1 that is not a board. Its lesson - the right
+    // instructions in an order that cannot work - needs no space to move
+    // through, and stating it without a grid is the point: a child who has
+    // memorised routes has nothing to fall back on here.
+    task: {
+      kind: 'order-steps',
+      steps: [
+        { id: 'roll-dough', label: 'Roll out the dough' },
+        { id: 'add-sauce', label: 'Spread the sauce' },
+        { id: 'add-cheese', label: 'Scatter the cheese' },
+        { id: 'bake', label: 'Bake it in the oven' },
+        { id: 'slice', label: 'Slice it up' },
+      ],
+      solution: ['roll-dough', 'add-sauce', 'add-cheese', 'bake', 'slice'],
+      // Baking before the toppings go on. Nothing here is a wrong step.
+      initialOrder: ['roll-dough', 'bake', 'add-sauce', 'add-cheese', 'slice'],
     },
     skills: ['sequence', 'debugging', 'explanation'],
-    allowedCommands: [...allDirections],
-    // The same four moves as the solution, in an order that walks straight into
-    // the wall. Secret Bug hides a changed instruction; this hides nothing at
-    // all - every instruction is correct and the route still fails, which is
-    // the one bug a child cannot fix by looking harder at the arrows.
-    initialProgram: ['up', 'up', 'right', 'right'],
-    maxCommands: 4,
-    optimalProgramLength: 4,
+    optimalProgramLength: 5,
     evidence: [
-      { skillId: 'debugging', dimension: 'debug', context: 'grid-wrong-order' },
+      { skillId: 'debugging', dimension: 'debug', context: 'kitchen-step-order' },
       // The fault is the ordering itself, so this is sequence debugging in the
-      // purest form World 1 can offer: nothing else about the program is wrong.
-      { skillId: 'sequence', dimension: 'debug', context: 'grid-wrong-order' },
+      // purest form World 1 can offer: nothing else about the plan is wrong.
+      { skillId: 'sequence', dimension: 'debug', context: 'kitchen-step-order' },
       // Tell Byte asks why a route the child built works. This asks the same of
-      // a route they repaired, which is a different thing to have to put into
-      // words - and the second context the explanation skill needs.
-      { skillId: 'explanation', dimension: 'explain', context: 'grid-wrong-order' },
+      // a plan they repaired, in a world with no board at all.
+      { skillId: 'explanation', dimension: 'explain', context: 'kitchen-step-order' },
     ],
-    explanationPrompt: 'The instructions never changed. Why does the new order work?',
+    explanationPrompt: 'The steps never changed. Why does the new order work?',
     explanationOptions: [
       {
-        id: 'clear-first',
-        label: 'Moving right first takes Byte past the block, so climbing is safe afterwards.',
+        id: 'toppings-first',
+        label: 'The toppings have to be on before it bakes, or they never cook.',
         correct: true,
       },
-      { id: 'more-steps', label: 'The new order gives Byte more steps to use.' },
+      { id: 'more-steps', label: 'The new order gives you more steps to use.' },
       { id: 'no-difference', label: 'Order never matters as long as the steps are right.' },
     ],
     hints: [
-      'Run it and watch: Byte stops on the very first instruction.',
-      'The block is directly above Byte. Something has to happen before climbing.',
-      'Move the two Right tiles in front of the two Up tiles.',
+      'Check it and watch which step it stops on.',
+      'Something is going into the oven before it is ready.',
+      'The baking step belongs just before slicing.',
     ],
   },
   {
@@ -476,26 +519,30 @@ export const worldOneMissions: MissionDefinition[] = [
     shortObjective: 'Collect 3 keys. Open the gate.',
     celebration: "You've been programming. You are a Command Master!",
     mode: 'boss',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 4 },
-      goal: { x: 4, y: 0 },
-      walls: [
-        { x: 1, y: 2 },
-        { x: 2, y: 2 },
-        { x: 2, y: 3 },
-        { x: 3, y: 3 },
-      ],
-      gems: [
-        { x: 1, y: 4 },
-        { x: 4, y: 2 },
-        { x: 4, y: 1 },
-      ],
+    theme: 'castle',
+    task: {
+      kind: 'run-program',
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 4 },
+        goal: { x: 4, y: 0 },
+        walls: [
+          { x: 1, y: 2 },
+          { x: 2, y: 2 },
+          { x: 2, y: 3 },
+          { x: 3, y: 3 },
+        ],
+        gems: [
+          { x: 1, y: 4 },
+          { x: 4, y: 2 },
+          { x: 4, y: 1 },
+        ],
+      },
+      allowedCommands: [...allDirections],
+      maxCommands: 10,
     },
     skills: ['sequence', 'prediction', 'debugging', 'creative_application'],
-    allowedCommands: [...allDirections],
-    maxCommands: 10,
     optimalProgramLength: 8,
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-integrated-boss' },
@@ -576,14 +623,21 @@ export const getMissionById = (id: string) =>
  *
  * The shipped board is kept first so existing progress stays valid.
  */
+const shippedBoss = worldOneMissions[worldOneMissions.length - 1];
+const shippedBossTask = shippedBoss.task as RunProgramTask;
+
 export const castleBossVariants: MissionDefinition[] = [
   {
-    ...worldOneMissions[worldOneMissions.length - 1],
+    ...shippedBoss,
     id: 'castle-boss',
+    theme: 'castle',
+    task: {
+      ...shippedBossTask,
+      maxCommands: 10,
+    },
     variantId: 'ascent',
     // Straight run then a straight climb: two turns.
     optimalProgramLength: 8,
-    maxCommands: 10,
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-ascent' },
       { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-ascent' },
@@ -595,33 +649,37 @@ export const castleBossVariants: MissionDefinition[] = [
     ],
   },
   {
-    ...worldOneMissions[worldOneMissions.length - 1],
+    ...shippedBoss,
     id: 'castle-boss',
+    theme: 'castle',
+    task: {
+      ...shippedBossTask,
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 4, y: 4 },
+        goal: { x: 0, y: 0 },
+        walls: [
+          { x: 3, y: 2 },
+          { x: 2, y: 2 },
+          { x: 2, y: 1 },
+          { x: 1, y: 1 },
+        ],
+        gems: [
+          { x: 3, y: 4 },
+          { x: 0, y: 2 },
+          { x: 0, y: 1 },
+        ],
+      },
+      maxCommands: 10,
+    },
     variantId: 'vault',
     title: 'Castle Boss — The Vault',
     objective:
       'Byte starts at the far tower. Collect all three keys and reach the vault door in the corner.',
     shortObjective: 'Collect 3 keys. Reach the vault.',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 4, y: 4 },
-      goal: { x: 0, y: 0 },
-      walls: [
-        { x: 3, y: 2 },
-        { x: 2, y: 2 },
-        { x: 2, y: 1 },
-        { x: 1, y: 1 },
-      ],
-      gems: [
-        { x: 3, y: 4 },
-        { x: 0, y: 2 },
-        { x: 0, y: 1 },
-      ],
-    },
     // A staircase: the wall spine forces alternating moves, five turns.
     optimalProgramLength: 8,
-    maxCommands: 10,
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-vault' },
       { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-vault' },
@@ -633,31 +691,35 @@ export const castleBossVariants: MissionDefinition[] = [
     ],
   },
   {
-    ...worldOneMissions[worldOneMissions.length - 1],
+    ...shippedBoss,
     id: 'castle-boss',
+    theme: 'castle',
+    task: {
+      ...shippedBossTask,
+      board: {
+        columns: 5,
+        rows: 5,
+        start: { x: 0, y: 3 },
+        goal: { x: 4, y: 0 },
+        walls: [
+          { x: 1, y: 2 },
+          { x: 4, y: 4 },
+        ],
+        gems: [
+          { x: 3, y: 3 },
+          { x: 4, y: 2 },
+          { x: 2, y: 2 },
+        ],
+      },
+      maxCommands: 11,
+    },
     variantId: 'ramparts',
     title: 'Castle Boss — The Ramparts',
     objective:
       'The keys are spread along the ramparts. Collect all three, then reach the high gate.',
     shortObjective: 'Collect 3 keys. Reach the high gate.',
-    board: {
-      columns: 5,
-      rows: 5,
-      start: { x: 0, y: 3 },
-      goal: { x: 4, y: 0 },
-      walls: [
-        { x: 1, y: 2 },
-        { x: 4, y: 4 },
-      ],
-      gems: [
-        { x: 3, y: 3 },
-        { x: 4, y: 2 },
-        { x: 2, y: 2 },
-      ],
-    },
     // Requires stepping back down after climbing: six turns, no straight run.
     optimalProgramLength: 9,
-    maxCommands: 11,
     evidence: [
       { skillId: 'sequence', dimension: 'transfer', context: 'grid-boss-ramparts' },
       { skillId: 'creative_application', dimension: 'transfer', context: 'grid-boss-ramparts' },

@@ -7,6 +7,7 @@ import type {
   PredictionOption,
 } from '../../../../packages/lesson-schema/src';
 import { pointKey } from '../../../../packages/learning-engine/src';
+import type { ThemeSkin } from '../../../../packages/content/src/themes';
 import { colours, radius, shadow } from '../theme';
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
   trail: Point[];
   predictionOptions?: PredictionOption[];
   size: number;
+  /** Presentation only. The canvas draws the theme; it never reports it. */
+  skin: ThemeSkin;
 };
 
 const markerColours = [colours.purple, '#3B9FE8', colours.coral];
@@ -25,6 +28,7 @@ export function MissionCanvas({
   trail,
   predictionOptions,
   size,
+  skin,
 }: Props) {
   const cell = size / board.columns;
   const inset = Math.max(4, cell * 0.08);
@@ -38,10 +42,10 @@ export function MissionCanvas({
   return (
     <View
       style={[styles.shell, { width: size, height: size }]}
-      accessibilityLabel={`Mission board. Byte is at column ${position.x + 1}, row ${position.y + 1}.`}
+      accessibilityLabel={`Mission board. ${skin.actor} is at column ${position.x + 1}, row ${position.y + 1}.`}
     >
       <Canvas style={{ width: size, height: size }}>
-        <Fill color="#F1EEFF" />
+        <Fill color={skin.surface} />
         {Array.from({ length: board.rows }).flatMap((_, row) =>
           Array.from({ length: board.columns }).map((__, column) => (
             <RoundedRect

@@ -37,7 +37,6 @@ const solutions: Record<string, Direction[]> = {
   // Both routes below are the true optimum for their board, confirmed by the
   // same breadth-first search that vets the boss variants - not by eye.
   'long-way-round': ['down', 'right', 'right', 'right', 'up', 'right'],
-  'out-of-order': ['right', 'right', 'up', 'up'],
   'castle-boss': ['right', 'right', 'right', 'right', 'up', 'up', 'up', 'up'],
 };
 
@@ -45,8 +44,23 @@ describe('Learning Engine V2 evidence', () => {
   it('keeps every World 1 evidence definition valid and its optimal route solvable', () => {
     for (const item of worldOneMissions) {
       expect(item.optimalProgramLength).toBeGreaterThan(0);
-      expect(solutions[item.id]).toHaveLength(item.optimalProgramLength);
-      expect(evaluateMission(item, solutions[item.id]).passed).toBe(true);
+      // Only a mission that walks a board has a route to verify. Asking the
+      // same question of an ordering task is how the grid assumption used to
+      // spread: everything downstream quietly assumed a board existed.
+      if (item.task.kind === 'run-program') {
+        expect(solutions[item.id]).toHaveLength(item.optimalProgramLength);
+        expect(evaluateMission(item, solutions[item.id]).passed).toBe(true);
+      } else if (item.task.kind === 'order-steps') {
+        const { steps, solution, initialOrder } = item.task;
+        const ids = steps.map((step) => step.id).sort();
+        expect(item.optimalProgramLength, `${item.id} length`).toBe(steps.length);
+        expect([...solution].sort(), `${item.id} solution`).toEqual(ids);
+        if (initialOrder) {
+          // A repair task that opens on the answer is not a repair task.
+          expect([...initialOrder].sort(), `${item.id} initial order`).toEqual(ids);
+          expect(initialOrder, `${item.id} starts already solved`).not.toEqual(solution);
+        }
+      }
       expect(item.evidence.length).toBeGreaterThan(0);
 
       const evidenceKeys = new Set<string>();

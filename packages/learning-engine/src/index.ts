@@ -128,16 +128,30 @@ export const runProgram = (
   };
 };
 
+/**
+ * Evaluates a spatial mission. Only run-program tasks have a board to walk,
+ * so this asks the task for one rather than assuming every mission has it.
+ */
+export const missionBoard = (mission: MissionDefinition): BoardDefinition => {
+  if (mission.task.kind !== 'run-program') {
+    throw new Error(`Mission ${mission.id} has no board: its task is ${mission.task.kind}.`);
+  }
+  return mission.task.board;
+};
+
 export const evaluateMission = (
   mission: MissionDefinition,
   program: Direction[],
 ): MissionEvaluation => {
-  const execution = runProgram(mission.board, program);
-  const reachedGoal = samePoint(execution.finalPosition, mission.board.goal);
+  const board = missionBoard(mission);
+  const maxCommands =
+    mission.task.kind === 'run-program' ? mission.task.maxCommands : undefined;
+  const execution = runProgram(board, program);
+  const reachedGoal = samePoint(execution.finalPosition, board.goal);
   const collectedEverything =
-    execution.collectedGemKeys.length === mission.board.gems.length;
+    execution.collectedGemKeys.length === board.gems.length;
   const withinCommandLimit =
-    mission.maxCommands === undefined || program.length <= mission.maxCommands;
+    maxCommands === undefined || program.length <= maxCommands;
 
   return {
     passed:
@@ -170,8 +184,8 @@ export const classifyMisconception = (
   if (mission.mode === 'debug') return 'bug_not_resolved';
 
   const distanceFromGoal =
-    Math.abs(evaluation.execution.finalPosition.x - mission.board.goal.x) +
-    Math.abs(evaluation.execution.finalPosition.y - mission.board.goal.y);
+    Math.abs(evaluation.execution.finalPosition.x - missionBoard(mission).goal.x) +
+    Math.abs(evaluation.execution.finalPosition.y - missionBoard(mission).goal.y);
   if (distanceFromGoal === 1) return 'stops_one_step_short';
   if (context.attemptNumber >= 3) return 'random_trial_and_error';
   return 'goal_not_reached';

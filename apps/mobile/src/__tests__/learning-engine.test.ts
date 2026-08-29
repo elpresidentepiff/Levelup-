@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { evaluateMission, runProgram } from '../../../../packages/learning-engine/src';
+import { evaluateMission, missionBoard, runProgram } from '../../../../packages/learning-engine/src';
 import { worldOneMissions } from '../../../../packages/content/src/world-one';
 import { applyMissionEvidence, createInitialProgress } from '../../../../packages/mastery/src';
 
@@ -23,11 +23,11 @@ describe('deterministic learning engine', () => {
       'secret-bug': ['right', 'right', 'up', 'up', 'right', 'right'],
       'build-your-maze': ['up', 'up', 'up', 'up', 'right', 'right', 'right', 'right'],
       'long-way-round': ['down', 'right', 'right', 'right', 'up', 'right'],
-      'out-of-order': ['right', 'right', 'up', 'up'],
       'castle-boss': ['right', 'right', 'right', 'right', 'up', 'up', 'up', 'up'],
     } as const;
 
     for (const item of worldOneMissions) {
+      if (item.task.kind !== 'run-program') continue;
       expect(evaluateMission(item, [...solutions[item.id as keyof typeof solutions]]).passed).toBe(true);
     }
   });
@@ -39,7 +39,7 @@ describe('deterministic learning engine', () => {
   });
 
   it('stops safely when a route hits a wall', () => {
-    const result = runProgram(mission('broken-bridge').board, ['right', 'right']);
+    const result = runProgram(missionBoard(mission('broken-bridge')), ['right', 'right']);
     expect(result.status).toBe('collision');
     expect(result.finalPosition).toEqual({ x: 1, y: 3 });
   });

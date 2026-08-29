@@ -4,8 +4,9 @@ import {
   castleBossVariants,
   selectCastleBossVariant,
 } from '../../../../packages/content/src/world-one';
-import { evaluateMission } from '../../../../packages/learning-engine/src';
-import type { BoardDefinition, Direction, MissionDefinition } from '../../../../packages/lesson-schema/src';
+import { evaluateMission, missionBoard } from '../../../../packages/learning-engine/src';
+import type {
+  RunProgramTask, BoardDefinition, Direction, MissionDefinition } from '../../../../packages/lesson-schema/src';
 
 /**
  * Boss variants are proved solvable, never assumed.
@@ -79,8 +80,8 @@ describe('castle boss variants', () => {
 
   it('is solvable within its own command budget, and the declared optimum is true', () => {
     for (const variant of castleBossVariants) {
-      const budget = variant.maxCommands ?? 12;
-      const route = shortestRoute(variant.board, budget);
+      const budget = (variant.task as RunProgramTask).maxCommands ?? 12;
+      const route = shortestRoute(missionBoard(variant), budget);
 
       expect(route, `${variant.id} has no solution within ${budget} commands`).not.toBeNull();
       const solution = route as Direction[];
@@ -99,7 +100,7 @@ describe('castle boss variants', () => {
 
   it('gives each variant genuinely different route logic, not a reskin', () => {
     const turnCounts = castleBossVariants.map((variant) => {
-      const route = shortestRoute(variant.board, variant.maxCommands ?? 12) as Direction[];
+      const route = shortestRoute(missionBoard(variant), (variant.task as RunProgramTask).maxCommands ?? 12) as Direction[];
       return route.reduce(
         (turns, step, index) => (index > 0 && step !== route[index - 1] ? turns + 1 : turns),
         0,
